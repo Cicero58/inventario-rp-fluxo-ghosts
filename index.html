@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Inventário RP</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<header>
+  <h1>📦 Inventário RP</h1>
+  <p id="resumo">0 itens • 0 unidades</p>
+  <button id="btnTema" title="Alternar tema">🌙</button>
+</header>
+
+<nav id="abas"></nav>
+<main id="conteudo"></main>
+
+<!-- MODAL ITEM -->
+<div id="modal" class="modal escondido">
+  <div class="modal-conteudo">
+    <h2 id="modalTitulo">Novo item</h2>
+    <div id="telaEscolha">
+      <label>🔍 Buscar item</label>
+      <input type="text" id="buscaItem" placeholder="Digite o nome..." />
+      <div class="lista-itens" id="listaItens"></div>
+    </div>
+    <div id="telaForm" style="display:none">
+      <label>Nome do item</label>
+      <input type="text" id="itemNome" placeholder="Ex: Pistola" />
+      <label>Quantidade</label>
+      <input type="number" id="itemQtd" min="1" value="1" />
+      <label>Categoria</label>
+      <select id="itemCategoria"></select>
+      <label>Peso por unidade (kg)</label>
+      <input type="number" id="itemPeso" step="0.01" min="0" value="0" />
+      <label>Emoji (opcional)</label>
+      <input type="text" id="itemEmoji" placeholder="🔫" maxlength="4" />
+      <label>Foto (opcional)</label>
+      <input type="file" id="itemFoto" accept="image/*" />
+      <div class="preview" id="preview"></div>
+    </div>
+    <div class="botoes">
+      <button id="btnCancelar" class="secundario">Cancelar</button>
+      <button id="btnVoltar" class="secundario" style="display:none">← Voltar</button>
+      <button id="btnSalvar">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL VEÍCULO -->
+<div id="modalVeiculo" class="modal escondido">
+  <div class="modal-conteudo">
+    <h2 id="modalVeiculoTitulo">Novo veículo</h2>
+    <label>Nome do veículo</label>
+    <input type="text" id="veicNome" placeholder="Ex: 24Model3" />
+    <label>Tipo</label>
+    <select id="veicTipo">
+      <option value="carro">🚗 Carro</option>
+      <option value="moto">🏍️ Moto</option>
+      <option value="helicoptero">🚁 Helicóptero</option>
+      <option value="aviao">✈️ Avião</option>
+      <option value="barco">🚤 Barco</option>
+      <option value="outro">📦 Outro</option>
+    </select>
+    <label>Vaga (opcional)</label>
+    <input type="text" id="veicVaga" placeholder="Ex: Vaga 01" />
+    <label>Capacidade do baú (kg)</label>
+    <input type="number" id="veicCap" min="0" value="500" />
+    <div class="botoes">
+      <button id="btnCancelarVeic" class="secundario">Cancelar</button>
+      <button id="btnSalvarVeic">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CAPACIDADE -->
+<div id="modalCap" class="modal escondido">
+  <div class="modal-conteudo">
+    <h2>Editar capacidade</h2>
+    <label>Capacidade do baú (kg)</label>
+    <input type="number" id="capValor" min="0" value="150" />
+    <div class="botoes">
+      <button id="btnCancelarCap" class="secundario">Cancelar</button>
+      <button id="btnSalvarCap">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL TIPO DE PONTO -->
+<div id="modalTipo" class="modal escondido">
+  <div class="modal-conteudo">
+    <h2 id="modalTipoTitulo">Novo tipo de ponto</h2>
+    <label>Nome do tipo</label>
+    <input type="text" id="tipoNome" placeholder="Ex: Mansão, Hospital, Loja..." />
+    <label>Emoji / Ícone</label>
+    <input type="text" id="tipoEmoji" placeholder="🏠" maxlength="4" />
+    <label>Cor</label>
+    <input type="color" id="tipoCor" value="#4a7dff" />
+    <label>Categoria (opcional)</label>
+    <input type="text" id="tipoCategoria" placeholder="Ex: Casas, Empregos, Lojas..." />
+    <div class="botoes">
+      <button id="btnCancelarTipo" class="secundario">Cancelar</button>
+      <button id="btnSalvarTipo">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL MARCADOR -->
+<div id="modalMarcador" class="modal escondido">
+  <div class="modal-conteudo">
+    <h2 id="modalMarcadorTitulo">Novo ponto no mapa</h2>
+    <label>Nome do local *</label>
+    <input type="text" id="marcNome" placeholder="Ex: Mansão do João" />
+    <label>Tipo de ponto</label>
+    <select id="marcTipo"></select>
+    <label>🔢 Número da Fac (opcional)</label>
+    <input type="text" id="marcNumeroFac" placeholder="Ex: 12" />
+    <label>🎯 Produção (opcional)</label>
+    <select id="marcProducao">
+      <option value="">— Nenhuma —</option>
+      <option value="Armas">🔫 Armas</option>
+      <option value="Munições">💥 Munições</option>
+      <option value="Drogas">💊 Drogas</option>
+      <option value="Muambas">📦 Muambas</option>
+      <option value="Lavagem">💰 Lavagem de Dinheiro</option>
+    </select>
+    <label>📞 Número / Telefone (opcional)</label>
+    <input type="text" id="marcNumero" placeholder="Ex: 555-1234" />
+    <label>👤 Dono / Responsável (opcional)</label>
+    <input type="text" id="marcDono" placeholder="Ex: João Silva" />
+    <label>📝 Descrição / Observação (opcional)</label>
+    <textarea id="marcDesc" placeholder="Ex: Casa grande, 2 andares..." rows="3" style="width:100%;padding:10px;background:var(--bg-3);border:1px solid var(--borda);border-radius:8px;color:var(--texto);font-family:inherit;resize:vertical;"></textarea>
+    <label>🖼️ Foto do ponto (opcional)</label>
+    <input type="file" id="marcFoto" accept="image/*" />
+    <div class="preview" id="previewMarc"></div>
+    <label>📦 Vincular a um baú (opcional)</label>
+    <select id="marcRef">
+      <option value="">— Nenhum —</option>
+    </select>
+    <div class="botoes">
+      <button id="btnCancelarMarc" class="secundario">Cancelar</button>
+      <button id="btnSalvarMarc">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAPA -->
+<div id="mapa-container">
+  <div id="mapa-header">
+    <h2>🗺️ Mapa Interativo</h2>
+    <div class="botoes">
+      <button id="btnModoAdd">📍 Marcar Local</button>
+      <button id="btnGerenciarTipos" class="sec">🏷️ Tipos</button>
+      <button id="btnTrocarEstilo" class="sec">🎨 Estilo</button>
+      <button id="btnFecharMapa" class="sec">✕ Fechar</button>
+    </div>
+  </div>
+  <div id="mapa-corpo">
+    <div id="mapa"></div>
+    <div id="mapa-busca">
+      <input type="text" id="buscaMapa" placeholder="🔍 Buscar ponto..." />
+      <div id="buscaResultados" class="escondido"></div>
+    </div>
+    <aside id="legenda">
+      <h3>📋 Legenda</h3>
+      <div id="legenda-lista"></div>
+      <div class="legenda-acoes">
+        <button id="btnMarcarTodos">✅ Todos</button>
+        <button id="btnDesmarcarTodos">⬜ Nenhum</button>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<!-- MODAL GERENCIAR TIPOS -->
+<div id="modalGerenciarTipos" class="modal escondido">
+  <div class="modal-conteudo">
+    <h2>🏷️ Tipos de ponto</h2>
+    <button id="btnNovoTipo" style="width:100%;padding:12px;background:#4a7dff;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:bold;margin-bottom:12px;">➕ Novo tipo</button>
+    <div id="listaTipos" style="max-height:400px;overflow-y:auto;"></div>
+    <div class="botoes">
+      <button id="btnFecharGerenciar" class="secundario">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONFIRMAR IMPORTAÇÃO -->
+<div id="modalImportar" class="modal escondido">
+  <div class="modal-conteudo">
+    <h2>📥 Importar backup</h2>
+    <p style="font-size:0.9rem;color:var(--texto-sec);line-height:1.5;margin-bottom:16px;">
+      O arquivo foi lido com sucesso!<br>
+      Como você quer aplicar os dados?
+    </p>
+    <div style="background:var(--bg-3);padding:12px;border-radius:8px;font-size:0.85rem;margin-bottom:16px;">
+      <div style="margin-bottom:6px;">📦 <strong id="previewQtdItens">0</strong> itens</div>
+      <div style="margin-bottom:6px;">🚗 <strong id="previewQtdVeiculos">0</strong> veículos</div>
+      <div style="margin-bottom:6px;">📍 <strong id="previewQtdMarcadores">0</strong> marcadores</div>
+      <div>🏷️ <strong id="previewQtdTipos">0</strong> tipos de ponto</div>
+    </div>
+    <div class="botoes" style="flex-direction:column;">
+      <button id="btnImportSubstituir" style="background:var(--vermelho);color:white;">🔄 Substituir tudo</button>
+      <button id="btnImportJuntar" style="background:var(--azul);color:white;">➕ Juntar com atual</button>
+      <button id="btnImportCancelar" class="secundario">❌ Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
