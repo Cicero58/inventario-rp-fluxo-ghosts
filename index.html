@@ -6,11 +6,31 @@
 <title>Inventário RP</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="style.css" />
+<style>
+  /* Easter egg - animação no título */
+  header h1 {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    user-select: none;
+  }
+  header h1:hover {
+    transform: scale(1.05);
+    text-shadow: 0 0 20px rgba(74, 125, 255, 0.8);
+  }
+  header h1.clicado {
+    animation: pulso 0.6s ease;
+  }
+  @keyframes pulso {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+    100% { transform: scale(1); }
+  }
+</style>
 </head>
 <body>
 
 <header>
-  <h1>📦 Inventário RP</h1>
+  <h1 id="tituloEaster">📦 Inventário RP</h1>
   <p id="resumo">0 itens • 0 unidades</p>
   <button id="btnTema" title="Alternar tema">🌙</button>
 </header>
@@ -244,6 +264,38 @@
     });
     console.log('OneSignal inicializado');
   });
+</script>
+
+<!-- 🌟 EASTER EGGS 🌟 -->
+<script>
+  // 1. Mensagem no console pra quem abrir o DevTools
+  console.log('%c🎮 Inventário RP — Fluxo GHOSTS', 'color: #7c4dff; font-size: 20px; font-weight: bold; text-shadow: 0 0 10px #7c4dff;');
+  console.log('%c👋 Eaí, curioso! Bem-vindo ao console.', 'color: #00c853; font-size: 14px;');
+  console.log('%c💡 Sabia que tem um easter egg? Clica 5 vezes no título!', 'color: #ffaa00; font-size: 13px;');
+  console.log('%c🚀 Feito com ❤️ pela Fluxo GHOSTS', 'color: #4a7dff; font-size: 12px;');
+
+  // 2. Easter egg - clicar 5 vezes no título
+  let cliques = 0;
+  const titulo = document.getElementById('tituloEaster');
+
+  if (titulo) {
+    titulo.addEventListener('click', () => {
+      cliques++;
+      titulo.classList.add('clicado');
+      setTimeout(() => titulo.classList.remove('clicado'), 600);
+
+      if (cliques === 5) {
+        alert('🎉 PARABÉNS! Você achou o easter egg!\n\n🎮 Fluxo GHOSTS\n👑 Líder: Cicero\n💜 Feito com carinho pra galera');
+        console.log('%c🎉 EASTER EGG DESBLOQUEADO!', 'color: #ff00ff; font-size: 18px; font-weight: bold;');
+        cliques = 0;
+      }
+    });
+  }
+
+  // 3. Mostra quando a página foi carregada
+  const agora = new Date();
+  const hora = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  console.log(`%c🕐 App carregado às ${hora}`, 'color: #8b93a7; font-size: 11px;');
 </script>
 
 </body>
