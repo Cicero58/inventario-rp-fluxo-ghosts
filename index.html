@@ -239,6 +239,8 @@
   OneSignalDeferred.push(async function(OneSignal) {
     await OneSignal.init({
       appId: "57614746-34e9-4f8f-903b-dad6b1fe1bfe",
+      serviceWorkerParam: { scope: "/inventario-rp-fluxo-ghosts/" },
+      serviceWorkerPath: "/inventario-rp-fluxo-ghosts/OneSignalSDKWorker.js",
     });
     console.log('OneSignal inicializado');
   });
