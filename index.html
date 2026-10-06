@@ -209,7 +209,41 @@
   </div>
 </div>
 
+<!-- MODAL ENVIAR NOTIFICAÇÃO (ADMIN) -->
+<div id="modalNotificacao" class="modal escondido">
+  <div class="modal-conteudo">
+    <h2>🔔 Enviar Notificação</h2>
+    <label>Título</label>
+    <input type="text" id="notifTitulo" placeholder="Ex: 🎉 Evento da Facção" />
+    <label>Mensagem</label>
+    <textarea id="notifMsg" placeholder="Ex: Reunião hoje às 20h no QG" rows="4" style="width:100%;padding:10px;background:var(--bg-3);border:1px solid var(--borda);border-radius:8px;color:var(--texto);font-family:inherit;resize:vertical;"></textarea>
+    <label>Quem vai receber?</label>
+    <select id="notifPublico">
+      <option value="all">🌐 Todos os usuários</option>
+      <option value="fac">👥 Só a Facção</option>
+    </select>
+    <div class="botoes">
+      <button id="btnCancelarNotif" class="secundario">Cancelar</button>
+      <button id="btnEnviarNotif">🔔 Enviar</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="script.js"></script>
+
+<!-- OneSignal SDK -->
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function(OneSignal) {
+    await OneSignal.init({
+      appId: "57614746-34e9-4f8f-903b-dad6b1fe1bfe",
+      allowLocalhostAsSecureOrigin: true,
+    });
+    console.log('OneSignal inicializado');
+  });
+</script>
+
 </body>
 </html>
