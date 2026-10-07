@@ -1486,8 +1486,8 @@ const somClick = new Audio('sounds/click.mp3');
 let somLigado = localStorage.getItem('som_ligado') !== 'off';
 let musicaIniciada = false;
 
-let volumeMusica = parseFloat(localStorage.getItem('volume_musica') || '0.25');
-let volumeClick = parseFloat(localStorage.getItem('volume_click') || '0.28');
+let volumeMusica = parseFloat(localStorage.getItem('volume_musica') || '0.06');
+let volumeClick = parseFloat(localStorage.getItem('volume_click') || '0.04');
 
 musicaFundo.volume = volumeMusica;
 somClick.volume = volumeClick;
