@@ -1477,4 +1477,210 @@ document.getElementById('modalMarcador').onclick = (e) => { if (e.target.id === 
 document.getElementById('modalTipo').onclick = (e) => { if (e.target.id === 'modalTipo') document.getElementById('modalTipo').classList.add('escondido'); };
 document.getElementById('modalGerenciarTipos').onclick = (e) => { if (e.target.id === 'modalGerenciarTipos') document.getElementById('modalGerenciarTipos').classList.add('escondido'); };
 
+// ===== SONS =====
+const musicaFundo = new Audio('sounds/menu.mp3');
+musicaFundo.loop = true;
+
+const somClick = new Audio('sounds/click.mp3');
+
+let somLigado = localStorage.getItem('som_ligado') !== 'off';
+let musicaIniciada = false;
+
+let volumeMusica = parseFloat(localStorage.getItem('volume_musica') || '0.25');
+let volumeClick = parseFloat(localStorage.getItem('volume_click') || '0.28');
+
+musicaFundo.volume = volumeMusica;
+somClick.volume = volumeClick;
+
+function atualizarBotaoSom() {
+  const btn = document.getElementById('btnSom');
+  if (!btn) return;
+  if (somLigado && volumeMusica > 0) {
+    btn.textContent = '🔊';
+    btn.classList.remove('mutado');
+  } else {
+    btn.textContent = '🔇';
+    btn.classList.add('mutado');
+  }
+}
+
+function tocarClick() {
+  if (!somLigado || volumeClick <= 0) return;
+  try {
+    somClick.currentTime = 0;
+    somClick.play().catch(e => {});
+  } catch (e) {}
+}
+
+function iniciarMusica() {
+  if (!somLigado || volumeMusica <= 0) return;
+  if (musicaIniciada) return;
+  if (musicaFundo.paused === false) { musicaIniciada = true; return; }
+
+  musicaFundo.volume = 0;
+  musicaFundo.play().then(() => {
+    musicaIniciada = true;
+    let vol = 0;
+    const alvo = volumeMusica;
+    const intervalo = setInterval(() => {
+      if (vol < alvo) {
+        vol += 0.01;
+        musicaFundo.volume = Math.min(vol, alvo);
+      } else {
+        clearInterval(intervalo);
+      }
+    }, 80);
+  }).catch(e => console.log('Erro ao tocar música:', e));
+}
+
+// Botão de som (mute/desmute da música)
+document.getElementById('btnSom').onclick = () => {
+  if (somLigado && musicaFundo.volume > 0 && !musicaFundo.paused) {
+    // Mutar música
+    musicaFundo.pause();
+    musicaIniciada = false;
+    atualizarBotaoSom();
+  } else {
+    // Desmutar
+    somLigado = true;
+    localStorage.setItem('som_ligado', 'on');
+    iniciarMusica();
+    atualizarBotaoSom();
+  }
+};
+
+// Toca som de clique em qualquer clique
+document.addEventListener('click', (e) => {
+  // Inicia música no primeiro clique
+  if (somLigado && !musicaIniciada && volumeMusica > 0) {
+    iniciarMusica();
+  }
+
+  // Toca som de clique
+  if (e.target.closest('button') || e.target.closest('.card-item') || e.target.closest('.card-veiculo') || e.target.closest('.item-opcao') || e.target.closest('.legenda-item')) {
+    tocarClick();
+  }
+});
+
+// Atualiza o botão ao carregar
+atualizarBotaoSom();
+
+// ===== ADICIONAR SEÇÃO DE SONS NA CONFIGURAÇÕES =====
+// Guarda a função original de renderConfiguracoes
+const _renderConfiguracoesOriginal = renderConfiguracoes;
+
+// Substitui por uma versão que adiciona a seção de sons
+renderConfiguracoes = function() {
+  _renderConfiguracoesOriginal();
+
+  // Adiciona a seção de sons no final
+  const secaoSons = document.createElement('div');
+  secaoSons.className = 'config-secao';
+  secaoSons.innerHTML = `
+    <h2>🔊 Sons</h2>
+    <p>Ajuste o volume da música de fundo e dos cliques.</p>
+
+    <div class="volume-titulo">
+      <strong>🎵 Música de fundo</strong>
+      <span class="volume-valor" id="volMusicaValor">${Math.round(volumeMusica * 100)}%</span>
+    </div>
+    <div class="volume-control">
+      <button class="volume-btn" id="volMusicaMinus">−</button>
+      <input type="range" id="volMusicaRange" min="0" max="100" value="${Math.round(volumeMusica * 100)}" />
+      <button class="volume-btn" id="volMusicaPlus">+</button>
+    </div>
+
+    <div class="volume-titulo">
+      <strong>🔘 Som de clique</strong>
+      <span class="volume-valor" id="volClickValor">${Math.round(volumeClick * 100)}%</span>
+    </div>
+    <div class="volume-control">
+      <button class="volume-btn" id="volClickMinus">−</button>
+      <input type="range" id="volClickRange" min="0" max="100" value="${Math.round(volumeClick * 100)}" />
+      <button class="volume-btn" id="volClickPlus">+</button>
+    </div>
+
+    <div class="mutar-container">
+      <button class="mutar-btn ${(!somLigado || volumeMusica <= 0) ? 'mutado' : ''}" id="btnMutarTudo">
+        ${(!somLigado || volumeMusica <= 0) ? '🔇 Música Mutada (clique para ativar)' : '🔊 Mutar Música'}
+      </button>
+    </div>
+  `;
+  conteudoEl.appendChild(secaoSons);
+
+  // Função pra atualizar o volume da música
+  function setVolumeMusica(valor) {
+    valor = Math.max(0, Math.min(100, valor));
+    volumeMusica = valor / 100;
+    localStorage.setItem('volume_musica', volumeMusica);
+    document.getElementById('volMusicaRange').value = valor;
+    document.getElementById('volMusicaValor').textContent = valor + '%';
+    musicaFundo.volume = volumeMusica;
+
+    if (volumeMusica > 0 && somLigado && !musicaIniciada) {
+      // Não inicia sozinho, só toca se já tava tocando
+    }
+    if (volumeMusica === 0) {
+      musicaFundo.pause();
+      musicaIniciada = false;
+    }
+    atualizarBotaoSom();
+    atualizarBotaoMutar();
+  }
+
+  function setVolumeClick(valor) {
+    valor = Math.max(0, Math.min(100, valor));
+    volumeClick = valor / 100;
+    localStorage.setItem('volume_click', volumeClick);
+    document.getElementById('volClickRange').value = valor;
+    document.getElementById('volClickValor').textContent = valor + '%';
+    somClick.volume = volumeClick;
+  }
+
+  function atualizarBotaoMutar() {
+    const btn = document.getElementById('btnMutarTudo');
+    if (!btn) return;
+    if (!somLigado || volumeMusica <= 0) {
+      btn.textContent = '🔇 Música Mutada (clique para ativar)';
+      btn.classList.add('mutado');
+    } else {
+      btn.textContent = '🔊 Mutar Música';
+      btn.classList.remove('mutado');
+    }
+  }
+
+  // Eventos dos sliders
+  document.getElementById('volMusicaRange').oninput = (e) => setVolumeMusica(parseInt(e.target.value));
+  document.getElementById('volClickRange').oninput = (e) => setVolumeClick(parseInt(e.target.value));
+
+  // Botões + e -
+  document.getElementById('volMusicaPlus').onclick = () => setVolumeMusica(Math.round(volumeMusica * 100) + 5);
+  document.getElementById('volMusicaMinus').onclick = () => setVolumeMusica(Math.round(volumeMusica * 100) - 5);
+  document.getElementById('volClickPlus').onclick = () => setVolumeClick(Math.round(volumeClick * 100) + 5);
+  document.getElementById('volClickMinus').onclick = () => setVolumeClick(Math.round(volumeClick * 100) - 5);
+
+  // Botão mutar música
+  document.getElementById('btnMutarTudo').onclick = () => {
+    if (somLigado && musicaFundo.volume > 0 && !musicaFundo.paused) {
+      // Mutar
+      somLigado = false;
+      localStorage.setItem('som_ligado', 'off');
+      musicaFundo.pause();
+      musicaIniciada = false;
+    } else {
+      // Desmutar
+      somLigado = true;
+      localStorage.setItem('som_ligado', 'on');
+      if (volumeMusica <= 0) {
+        // Se volume tá 0, sobe pra 25%
+        setVolumeMusica(25);
+      } else {
+        iniciarMusica();
+      }
+    }
+    atualizarBotaoSom();
+    atualizarBotaoMutar();
+  };
+};
+
 init();
