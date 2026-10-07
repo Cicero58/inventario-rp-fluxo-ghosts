@@ -26,6 +26,7 @@ const BASE_ITENS = [
   { nome:'M4A1 MK2', cat:'armas', peso:10, emoji:'🔫' },
   { nome:'Faca', cat:'armas', peso:5, emoji:'🔪' },
   { nome:'Taco de Baseball', cat:'armas', peso:5, emoji:'🏏' },
+  { nome:'Dinheiro Sujo', cat:'dinheiro', peso:0, emoji:'💰' },
 ];
 
 const CATEGORIAS = [
@@ -53,6 +54,8 @@ const TIPOS_PADRAO = [
   { id:'banco', nome:'Banco', emoji:'🏦', cor:'#00bcd4', categoria:'Serviços' },
   { id:'policia', nome:'Polícia', emoji:'🚓', cor:'#3f51b5', categoria:'Serviços' },
 ];
+
+const TEMAS = ['escuro', 'claro', 'neon'];
 
 // ===== ESTADO =====
 let itens = JSON.parse(localStorage.getItem('itens_rp_v2') || '[]');
@@ -86,24 +89,30 @@ function init() {
   render();
 }
 
-// ===== TEMA =====
+// ===== TEMA (3 opções) =====
 function carregarTema() {
   const tema = localStorage.getItem('tema_rp') || 'escuro';
+  aplicarTema(tema);
+}
+
+function aplicarTema(tema) {
+  document.body.classList.remove('claro', 'neon');
   if (tema === 'claro') document.body.classList.add('claro');
-  atualizarIconeTema();
-}
+  if (tema === 'neon') document.body.classList.add('neon');
 
-function atualizarIconeTema() {
-  const claro = document.body.classList.contains('claro');
-  document.getElementById('btnTema').textContent = claro ? '☀️' : '🌙';
-}
-
-document.getElementById('btnTema').onclick = () => {
-  document.body.classList.toggle('claro');
-  const tema = document.body.classList.contains('claro') ? 'claro' : 'escuro';
+  const icones = { escuro: '🌙', claro: '☀️', neon: '💜' };
+  document.getElementById('btnTema').textContent = icones[tema] || '🌙';
   localStorage.setItem('tema_rp', tema);
-  atualizarIconeTema();
-};
+}
+
+function proximoTema() {
+  const atual = localStorage.getItem('tema_rp') || 'escuro';
+  const i = TEMAS.indexOf(atual);
+  const proximo = TEMAS[(i + 1) % TEMAS.length];
+  aplicarTema(proximo);
+}
+
+document.getElementById('btnTema').onclick = proximoTema;
 
 // ===== ABAS =====
 function montarAbas() {
@@ -582,18 +591,48 @@ function salvarStorage() {
   localStorage.setItem('tipos_ponto_rp', JSON.stringify(tiposPonto));
 }
 
-// ===== CONFIGURAÇÕES / BACKUP =====
+// ===== CONFIGURAÇÕES =====
 function renderConfiguracoes() {
   const totalItens = itens.length;
   const totalVeiculos = veiculos.length;
   const totalMarcadores = marcadoresMapa.length;
   const totalTipos = tiposPonto.length;
+  const temaAtual = localStorage.getItem('tema_rp') || 'escuro';
+  const corAtiva = localStorage.getItem('cor_marcadores') !== 'sem-cor';
 
   const div = document.createElement('div');
   div.innerHTML = `
     <div class="config-secao">
+      <h2>🎨 Tema</h2>
+      <p>Escolha o tema do app. Sua escolha fica salva automaticamente.</p>
+      <div class="temas-selector">
+        <div class="tema-opcao ${temaAtual === 'escuro' ? 'ativo' : ''}" data-tema="escuro">
+          <div class="icone">🌙</div>
+          <div class="nome">Escuro</div>
+        </div>
+        <div class="tema-opcao ${temaAtual === 'claro' ? 'ativo' : ''}" data-tema="claro">
+          <div class="icone">☀️</div>
+          <div class="nome">Claro</div>
+        </div>
+        <div class="tema-opcao ${temaAtual === 'neon' ? 'ativo' : ''}" data-tema="neon">
+          <div class="icone">💜</div>
+          <div class="nome">Neon</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="config-secao">
+      <h2>🎯 Marcadores do mapa</h2>
+      <p>Como você quer que os marcadores apareçam no mapa?</p>
+      <div class="config-botoes">
+        <button id="btnComCor" style="background:${corAtiva ? 'var(--azul)' : 'var(--bg-3)'};color:${corAtiva ? 'white' : 'var(--texto)'};">🎨 Com cor</button>
+        <button id="btnSemCor" style="background:${!corAtiva ? 'var(--azul)' : 'var(--bg-3)'};color:${!corAtiva ? 'white' : 'var(--texto)'};">✨ Só emoji</button>
+      </div>
+    </div>
+
+    <div class="config-secao">
       <h2>📤 Exportar backup</h2>
-      <p>Baixe um arquivo com <strong>todos os seus dados</strong> (itens, veículos, marcadores, tipos). Guarde em local seguro (pen drive, nuvem, e-mail).</p>
+      <p>Baixe um arquivo com <strong>todos os seus dados</strong> (itens, veículos, marcadores, tipos). Guarde em local seguro.</p>
       <div class="config-botoes">
         <button class="btn-exportar" id="btnExportar">📤 Exportar backup</button>
       </div>
@@ -620,7 +659,7 @@ function renderConfiguracoes() {
 
     <div class="config-secao">
       <h2>⚠️ Zona de perigo</h2>
-      <p>Apagar <strong>TODOS</strong> os dados do app. Essa ação <strong>não pode ser desfeita</strong>! Recomendo exportar um backup antes.</p>
+      <p>Apagar <strong>TODOS</strong> os dados do app. Essa ação <strong>não pode ser desfeita</strong>!</p>
       <div class="config-botoes">
         <button class="btn-resetar" id="btnResetar">🗑️ Apagar tudo</button>
       </div>
@@ -628,12 +667,41 @@ function renderConfiguracoes() {
   `;
   conteudoEl.appendChild(div);
 
+  div.querySelectorAll('.tema-opcao').forEach(el => {
+    el.onclick = () => {
+      const tema = el.dataset.tema;
+      aplicarTema(tema);
+      render();
+    };
+  });
+
+  div.querySelector('#btnComCor').onclick = () => {
+    localStorage.setItem('cor_marcadores', 'com-cor');
+    render();
+    if (map) {
+      marcadoresLeaflet.forEach(x => map.removeLayer(x.marker));
+      marcadoresLeaflet = [];
+      marcadoresMapa.forEach(m => desenharMarcador(m));
+    }
+  };
+
+  div.querySelector('#btnSemCor').onclick = () => {
+    localStorage.setItem('cor_marcadores', 'sem-cor');
+    render();
+    if (map) {
+      marcadoresLeaflet.forEach(x => map.removeLayer(x.marker));
+      marcadoresLeaflet = [];
+      marcadoresMapa.forEach(m => desenharMarcador(m));
+    }
+  };
+
   div.querySelector('#btnExportar').onclick = exportarBackup;
   div.querySelector('#btnImportar').onclick = () => document.getElementById('arquivoImport').click();
   div.querySelector('#arquivoImport').onchange = importarBackup;
   div.querySelector('#btnResetar').onclick = resetarTudo;
 }
 
+// ===== EXPORTAR / IMPORTAR =====
 async function exportarBackup() {
   const backup = {
     versao: 1,
@@ -645,70 +713,48 @@ async function exportarBackup() {
     marcadoresMapa,
     tiposVisiveis,
     tema: localStorage.getItem('tema_rp') || 'escuro',
+    corMarcadores: localStorage.getItem('cor_marcadores') || 'com-cor',
   };
 
   const json = JSON.stringify(backup, null, 2);
   const nomeArquivo = `inventario-rp-backup-${new Date().toISOString().slice(0,10)}.json`;
 
   try {
-    // Acessa os plugins do Capacitor (com verificação)
-    const Cap = window.Capacitor;
-    const Plugins = Cap && Cap.Plugins;
+    if (window.Capacitor && window.Capacitor.Plugins) {
+      const Plugins = window.Capacitor.Plugins;
+      if (Plugins.Filesystem && Plugins.Share) {
+        const Filesystem = Plugins.Filesystem;
+        const Share = Plugins.Share;
+        const Directory = Filesystem.Directory;
+        const Encoding = Filesystem.Encoding;
+        const cacheDir = (Directory && Directory.Cache) ? Directory.Cache : 'CACHE';
 
-    if (Plugins && Plugins.Filesystem && Plugins.Share) {
-      const Filesystem = Plugins.Filesystem;
-      const Share = Plugins.Share;
+        await Filesystem.writeFile({
+          path: nomeArquivo,
+          data: json,
+          directory: cacheDir,
+          encoding: Encoding ? Encoding.UTF8 : 'utf8',
+        });
 
-      // Directory e Encoding estão DENTRO do Filesystem
-      const Directory = Filesystem.Directory;
-      const Encoding = Filesystem.Encoding;
+        const uriResult = await Filesystem.getUri({
+          path: nomeArquivo,
+          directory: cacheDir,
+        });
 
-      // Verifica se Directory existe
-      if (!Directory || !Directory.Cache) {
-        console.log('Directory.Cache nao disponivel, tentando outro...');
-        // Tenta valores como string (fallback)
-        var cacheDir = 'CACHE';
-      } else {
-        var cacheDir = Directory.Cache;
+        await Share.share({
+          title: 'Backup Inventário RP',
+          text: 'Escolha onde salvar o backup',
+          url: uriResult.uri,
+          dialogTitle: 'Salvar backup',
+        });
+
+        return;
       }
-
-      // Escreve o arquivo
-      await Filesystem.writeFile({
-        path: nomeArquivo,
-        data: json,
-        directory: cacheDir,
-        encoding: Encoding ? Encoding.UTF8 : 'utf8',
-      });
-
-      // Pega o URI
-      const uriResult = await Filesystem.getUri({
-        path: nomeArquivo,
-        directory: cacheDir,
-      });
-
-      // Compartilha
-      await Share.share({
-        title: 'Backup Inventário RP',
-        text: 'Escolha onde salvar o backup',
-        url: uriResult.uri,
-        dialogTitle: 'Salvar backup',
-      });
-
-      return;
-    } else {
-      console.log('Plugins nao disponiveis:', {
-        temPlugins: !!Plugins,
-        temFilesystem: !!(Plugins && Plugins.Filesystem),
-        temShare: !!(Plugins && Plugins.Share),
-      });
     }
   } catch (err) {
     console.log('Erro no plugin nativo:', err);
-    alert('Erro ao salvar backup: ' + err.message);
-    return;
   }
 
-  // Fallback: download tradicional
   downloadFallback(json, nomeArquivo);
 }
 
@@ -770,8 +816,7 @@ document.getElementById('btnImportSubstituir').onclick = () => {
 
   if (backupPendente.tema) {
     localStorage.setItem('tema_rp', backupPendente.tema);
-    document.body.classList.toggle('claro', backupPendente.tema === 'claro');
-    atualizarIconeTema();
+    aplicarTema(backupPendente.tema);
   }
 
   backupPendente = null;
@@ -903,6 +948,22 @@ document.getElementById('btnTrocarEstilo').onclick = () => {
   }
 };
 
+// Botão de alternar cor dos marcadores
+document.getElementById('btnToggleCor').onclick = () => {
+  const atual = localStorage.getItem('cor_marcadores') || 'com-cor';
+  const novo = atual === 'com-cor' ? 'sem-cor' : 'com-cor';
+  localStorage.setItem('cor_marcadores', novo);
+
+  if (map) {
+    marcadoresLeaflet.forEach(x => map.removeLayer(x.marker));
+    marcadoresLeaflet = [];
+    marcadoresMapa.forEach(m => desenharMarcador(m));
+  }
+
+  document.getElementById('btnToggleCor').textContent =
+    novo === 'com-cor' ? '🎨 Marcadores' : '✨ Só Emoji';
+};
+
 function abrirMapa() {
   document.getElementById('mapa-container').classList.add('ativo');
 
@@ -928,6 +989,11 @@ function abrirMapa() {
     });
   }
 
+  // Atualiza o texto do botão de cor
+  const corAtual = localStorage.getItem('cor_marcadores') || 'com-cor';
+  document.getElementById('btnToggleCor').textContent =
+    corAtual === 'com-cor' ? '🎨 Marcadores' : '✨ Só Emoji';
+
   atualizarLegenda();
 
   setTimeout(() => {
@@ -947,10 +1013,11 @@ function abrirMapa() {
 function desenharMarcador(m) {
   const tipo = tiposPonto.find(t => t.id === m.tipoId) || tiposPonto[0];
   const visivel = tiposVisiveis.includes(m.tipoId);
+  const semCor = localStorage.getItem('cor_marcadores') === 'sem-cor';
 
   const icon = L.divIcon({
     className: 'marcador-custom',
-    html: `<div class="marcador-ponto" style="background:${tipo.cor};">${tipo.emoji}</div>`,
+    html: `<div class="marcador-ponto ${semCor ? 'sem-cor' : ''}" style="${semCor ? '' : 'background:' + tipo.cor + ';'}">${tipo.emoji}</div>`,
     iconSize: [32, 32],
     iconAnchor: [16, 16],
     popupAnchor: [0, -16],
