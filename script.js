@@ -189,6 +189,15 @@ function montarAbas() {
   btnConfig.classList.toggle('ativo', abaAtual === 'config');
   btnConfig.onclick = () => { abaAtual = 'config'; veiculoAberto = null; montarAbas(); render(); };
   abasEl.appendChild(btnConfig);
+  // Aba Admin (só pra admins)
+  if (window.tipoUsuario === 'admin') {
+    const btnAdmin = document.createElement('button');
+    btnAdmin.textContent = '👑 Admin';
+    btnAdmin.style.background = '#ffaa00';
+    btnAdmin.style.color = '#000';
+    btnAdmin.onclick = () => abrirPainelAdmin();
+    abasEl.appendChild(btnAdmin);
+  }
 }
 
 function montarCategorias() {

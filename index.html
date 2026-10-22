@@ -240,7 +240,33 @@
       </div>
     </div>
   </div>
+  <!-- PAINEL ADMIN -->
+  <div id="modalAdmin" class="modal escondido">
+    <div class="modal-conteudo">
+      <h2>👑 Painel de Admin</h2>
 
+      <h3 style="margin-top:16px;color:var(--azul);">➕ Criar nova conta</h3>
+      <label>Email</label>
+      <input type="email" id="adminEmail" placeholder="cliente@email.com" />
+      <label>Senha</label>
+      <input type="password" id="adminSenha" placeholder="Mínimo 6 caracteres" />
+      <label>Tipo</label>
+      <select id="adminTipo">
+        <option value="cliente">🧑 Cliente</option>
+        <option value="admin">👑 Admin</option>
+      </select>
+      <div class="botoes">
+        <button id="btnCriarConta" style="background:var(--azul);color:white;">➕ Criar conta</button>
+      </div>
+
+      <h3 style="margin-top:24px;color:var(--azul);">👥 Usuários cadastrados</h3>
+      <div id="listaUsuarios" style="max-height:300px;overflow-y:auto;margin-top:8px;"></div>
+
+      <div class="botoes">
+        <button id="btnFecharAdmin" class="secundario">Fechar</button>
+      </div>
+    </div>
+  </div>
 </div><!-- FECHA appPrincipal -->
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -384,6 +410,108 @@
     if (confirm('Sair da conta?')) {
       firebase.auth().signOut();
     }
+  };
+  // ===== PAINEL ADMIN =====
+  function abrirPainelAdmin() {
+    document.getElementById('modalAdmin').classList.remove('escondido');
+    carregarUsuarios();
+  }
+
+  function fecharPainelAdmin() {
+    document.getElementById('modalAdmin').classList.add('escondido');
+  }
+
+  async function carregarUsuarios() {
+    const lista = document.getElementById('listaUsuarios');
+    lista.innerHTML = '<div style="text-align:center;padding:20px;color:var(--texto-sec);">⏳ Carregando...</div>';
+
+    try {
+      const snap = await firebase.firestore().collection('usuarios').get();
+      lista.innerHTML = '';
+
+      if (snap.empty) {
+        lista.innerHTML = '<div style="text-align:center;padding:20px;color:var(--texto-sec);">Nenhum usuário cadastrado.</div>';
+        return;
+      }
+
+      snap.forEach(doc => {
+        const u = doc.data();
+        const div = document.createElement('div');
+        div.className = 'user-item';
+        div.innerHTML = `
+          <div class="info">
+            <strong>${u.email || '(sem email)'}</strong>
+            <span>Criado: ${u.criadoEm ? new Date(u.criadoEm.seconds * 1000).toLocaleDateString('pt-BR') : 'desconhecido'}</span>
+          </div>
+          <span class="tipo-badge ${u.tipo || 'cliente'}">${u.tipo === 'admin' ? '👑 Admin' : '🧑 Cliente'}</span>
+          <button title="Excluir" data-id="${doc.id}">🗑️</button>
+        `;
+        div.querySelector('button').onclick = () => excluirUsuario(doc.id, u.email);
+        lista.appendChild(div);
+      });
+    } catch (err) {
+      lista.innerHTML = '<div style="text-align:center;padding:20px;color:var(--vermelho);">❌ Erro ao carregar: ' + err.message + '</div>';
+    }
+  }
+
+  async function criarConta() {
+    const email = document.getElementById('adminEmail').value.trim();
+    const senha = document.getElementById('adminSenha').value;
+    const tipo = document.getElementById('adminTipo').value;
+
+    if (!email || !senha) {
+      alert('❌ Preencha email e senha');
+      return;
+    }
+
+    if (senha.length < 6) {
+      alert('❌ Senha deve ter no mínimo 6 caracteres');
+      return;
+    }
+
+    try {
+      // Cria o usuário no Auth (sem deslogar o admin atual)
+      const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, senha);
+      const newUser = userCredential.user;
+
+      // Salva no Firestore
+      await firebase.firestore().collection('usuarios').doc(newUser.uid).set({
+        email: email,
+        tipo: tipo,
+        criadoEm: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      alert('✅ Conta criada com sucesso!\n\nEmail: ' + email + '\nTipo: ' + tipo);
+
+      document.getElementById('adminEmail').value = '';
+      document.getElementById('adminSenha').value = '';
+      document.getElementById('adminTipo').value = 'cliente';
+      carregarUsuarios();
+    } catch (err) {
+      let msg = '❌ Erro ao criar conta';
+      if (err.code === 'auth/email-already-in-use') msg = '❌ Esse email já está cadastrado';
+      else if (err.code === 'auth/invalid-email') msg = '❌ Email inválido';
+      else if (err.code === 'auth/weak-password') msg = '❌ Senha muito fraca';
+      else msg += ': ' + err.message;
+      alert(msg);
+    }
+  }
+
+  async function excluirUsuario(uid, email) {
+    if (!confirm(`Excluir o usuário ${email}?\n\n⚠️ Isso remove do Firestore, mas a conta de login continua ativa no Firebase Auth.`)) return;
+
+    try {
+      await firebase.firestore().collection('usuarios').doc(uid).delete();
+      carregarUsuarios();
+    } catch (err) {
+      alert('❌ Erro ao excluir: ' + err.message);
+    }
+  }
+
+  document.getElementById('btnCriarConta').onclick = criarConta;
+  document.getElementById('btnFecharAdmin').onclick = fecharPainelAdmin;
+  document.getElementById('modalAdmin').onclick = (e) => {
+    if (e.target.id === 'modalAdmin') fecharPainelAdmin();
   };
 </script>
 
