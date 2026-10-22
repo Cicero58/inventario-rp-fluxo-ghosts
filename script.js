@@ -1755,7 +1755,7 @@ renderConfiguracoes = function() {
   };
 };
 
-init();
+// Não chama init() aqui! O Firebase vai chamar depois do login.
 // Esconde o app e mostra só o login ao carregar
 document.addEventListener('DOMContentLoaded', () => {
   const app = document.getElementById('appPrincipal');
