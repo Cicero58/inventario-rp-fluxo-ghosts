@@ -1,32 +1,76 @@
 // ===== BASE DE ITENS =====
 const BASE_ITENS = [
-  { nome:'Celular', cat:'outros', peso:0.50, emoji:'📱' },
-  { nome:'Rádio', cat:'outros', peso:1.50, emoji:'📻' },
-  { nome:'Mochila', cat:'outros', peso:0, emoji:'🎒' },
-  { nome:'Laço', cat:'ferramentas', peso:1.50, emoji:'🪢' },
-  { nome:'Máscara', cat:'ferramentas', peso:1.50, emoji:'😷' },
-  { nome:'Roupas', cat:'ferramentas', peso:0.50, emoji:'👕' },
-  { nome:'Kit de Reparo', cat:'ferramentas', peso:2.50, emoji:'🧰' },
-  { nome:'Algema', cat:'ferramentas', peso:3.50, emoji:'⛓️' },
-  { nome:'Rastreador de Veículo', cat:'ferramentas', peso:0.25, emoji:'📡' },
-  { nome:'Masterpick', cat:'ferramentas', peso:1.50, emoji:'🔓' },
-  { nome:'Placa', cat:'ferramentas', peso:2, emoji:'🪧' },
-  { nome:'Seringa Reanimadora', cat:'remedios', peso:5, emoji:'💉' },
-  { nome:'Bandagem', cat:'remedios', peso:0.50, emoji:'🩹' },
-  { nome:'Munição de Pistola', cat:'municao', peso:0.01, emoji:'💥' },
-  { nome:'Munição de SMG', cat:'municao', peso:0.02, emoji:'💥' },
-  { nome:'Munição de Rifle', cat:'municao', peso:0.03, emoji:'💥' },
-  { nome:'PT Five Seven', cat:'armas', peso:5, emoji:'🔫' },
-  { nome:'Parafall', cat:'armas', peso:10, emoji:'🔫' },
-  { nome:'Tec-9', cat:'armas', peso:8, emoji:'🔫' },
-  { nome:'Soco Inglês', cat:'armas', peso:5, emoji:'🥊' },
-  { nome:'M9A3', cat:'armas', peso:5, emoji:'🔫' },
-  { nome:'Fuzil Militar', cat:'armas', peso:10, emoji:'🔫' },
-  { nome:'Glock Rajada', cat:'armas', peso:5, emoji:'🔫' },
-  { nome:'M4A1 MK2', cat:'armas', peso:10, emoji:'🔫' },
-  { nome:'Faca', cat:'armas', peso:5, emoji:'🔪' },
-  { nome:'Taco de Baseball', cat:'armas', peso:5, emoji:'🏏' },
-  { nome:'Dinheiro Sujo', cat:'dinheiro', peso:0, emoji:'💰' },
+  // 📦 Outros
+  { nome:'Celular', cat:'outros', peso:0.50, emoji:'📱', preco:0 },
+  { nome:'Rádio', cat:'outros', peso:1.50, emoji:'📻', preco:0 },
+  { nome:'Mochila', cat:'outros', peso:0, emoji:'🎒', preco:0 },
+
+  // 💰 Dinheiro
+  { nome:'Dinheiro Normal', cat:'dinheiro', peso:0, emoji:'💵', preco:0 },
+  { nome:'Dinheiro Sujo', cat:'dinheiro', peso:0, emoji:'💰', preco:0 },
+
+  // 🔧 Ferramentas
+  { nome:'Laço', cat:'ferramentas', peso:1.50, emoji:'🪢', preco:0 },
+  { nome:'Máscara', cat:'ferramentas', peso:1.50, emoji:'😷', preco:0 },
+  { nome:'Roupas', cat:'ferramentas', peso:0.50, emoji:'👕', preco:0 },
+  { nome:'Kit de Reparo', cat:'ferramentas', peso:2.50, emoji:'🧰', preco:0 },
+  { nome:'Algema', cat:'ferramentas', peso:3.50, emoji:'⛓️', preco:0 },
+  { nome:'Rastreador de Veículo', cat:'ferramentas', peso:0.25, emoji:'📡', preco:0 },
+  { nome:'Masterpick', cat:'ferramentas', peso:1.50, emoji:'🔓', preco:0 },
+  { nome:'Placa', cat:'ferramentas', peso:2, emoji:'🪧', preco:0 },
+
+  // 💉 Remédios
+  { nome:'Seringa Reanimadora', cat:'remedios', peso:5, emoji:'💉', preco:0 },
+  { nome:'Bandagem', cat:'remedios', peso:0.50, emoji:'🩹', preco:0 },
+
+  // 💥 Munição
+  { nome:'Munição de Pistola', cat:'municao', peso:0.01, emoji:'💥', preco:0 },
+  { nome:'Munição de SMG', cat:'municao', peso:0.02, emoji:'💥', preco:0 },
+  { nome:'Munição de Rifle', cat:'municao', peso:0.03, emoji:'💥', preco:0 },
+
+  // 🔫 Armas
+  { nome:'PT Five Seven', cat:'armas', peso:5, emoji:'🔫', preco:0 },
+  { nome:'Parafall', cat:'armas', peso:10, emoji:'🔫', preco:0 },
+  { nome:'Tec-9', cat:'armas', peso:8, emoji:'🔫', preco:0 },
+  { nome:'Soco Inglês', cat:'armas', peso:5, emoji:'🥊', preco:0 },
+  { nome:'M9A3', cat:'armas', peso:5, emoji:'🔫', preco:0 },
+  { nome:'Fuzil Militar', cat:'armas', peso:10, emoji:'🔫', preco:0 },
+  { nome:'Glock Rajada', cat:'armas', peso:5, emoji:'🔫', preco:0 },
+  { nome:'M4A1 MK2', cat:'armas', peso:10, emoji:'🔫', preco:0 },
+  { nome:'Faca', cat:'armas', peso:5, emoji:'🔪', preco:0 },
+  { nome:'Taco de Baseball', cat:'armas', peso:5, emoji:'🏏', preco:0 },
+
+  // 💊 Drogas
+  { nome:'Cristal (Venda)', cat:'drogas', peso:0.50, emoji:'💎', preco:0 },
+  { nome:'Cristal (Uso)', cat:'drogas', peso:0.35, emoji:'💊', preco:0 },
+  { nome:'Adrenalina (Venda)', cat:'drogas', peso:0.50, emoji:'💉', preco:0 },
+  { nome:'Adrenalina (Uso)', cat:'drogas', peso:0.35, emoji:'🩸', preco:0 },
+  { nome:'Farinha (Venda)', cat:'drogas', peso:0.50, emoji:'🌾', preco:0 },
+  { nome:'Farinha (Uso)', cat:'drogas', peso:0.35, emoji:'🥣', preco:0 },
+  { nome:'Erva (Venda)', cat:'drogas', peso:0.50, emoji:'🌿', preco:0 },
+  { nome:'Erva (Uso)', cat:'drogas', peso:0.35, emoji:'🍁', preco:0 },
+  { nome:'Papelzinho (Venda)', cat:'drogas', peso:0.50, emoji:'📄', preco:0 },
+  { nome:'Papelzinho (Uso)', cat:'drogas', peso:0.35, emoji:'🚬', preco:0 },
+
+  // ⛏️ Mineração
+  { nome:'Ouro', cat:'mineracao', peso:1.00, emoji:'🥇', preco:360 },
+  { nome:'Prata', cat:'mineracao', peso:0.50, emoji:'🥈', preco:390 },
+  { nome:'Bronze', cat:'mineracao', peso:0.80, emoji:'🥉', preco:240 },
+  { nome:'Quartzo', cat:'mineracao', peso:0.50, emoji:'💎', preco:360 },
+  { nome:'Topázio', cat:'mineracao', peso:1.00, emoji:'💛', preco:330 },
+  { nome:'Turmalina', cat:'mineracao', peso:1.20, emoji:'💚', preco:348 },
+
+  // 🎣 Pescaria
+  { nome:'Isca', cat:'pescaria', peso:0.25, emoji:'🪱', preco:400 },
+  { nome:'Lambari', cat:'pescaria', peso:0.30, emoji:'🐟', preco:600 },
+  { nome:'Salmão', cat:'pescaria', peso:0.30, emoji:'🐟', preco:1200 },
+  { nome:'Tilápia', cat:'pescaria', peso:0.30, emoji:'🐟', preco:1200 },
+  { nome:'Pirarucu', cat:'pescaria', peso:0.30, emoji:'🐟', preco:900 },
+  { nome:'Dourado', cat:'pescaria', peso:0.90, emoji:'🐟', preco:1200 },
+  { nome:'Pintado', cat:'pescaria', peso:0.30, emoji:'🐟', preco:900 },
+  { nome:'Corvina', cat:'pescaria', peso:0.30, emoji:'🐟', preco:900 },
+  { nome:'Pacu', cat:'pescaria', peso:0.30, emoji:'🐟', preco:900 },
+  { nome:'Peixe Desconhecido', cat:'pescaria', peso:0, emoji:'❓', preco:900 },
 ];
 
 const CATEGORIAS = [
@@ -36,6 +80,8 @@ const CATEGORIAS = [
   { id:'ferramentas', nome:'🔧 Ferramentas' },
   { id:'remedios', nome:'💉 Remédios' },
   { id:'dinheiro', nome:'💰 Dinheiro' },
+  { id:'mineracao', nome:'⛏️ Mineração' },
+  { id:'pescaria', nome:'🎣 Pescaria' },
   { id:'outros', nome:'📦 Outros' },
 ];
 
@@ -368,11 +414,19 @@ function criarCardItem(item) {
   card.className = 'card-item';
   const cat = CATEGORIAS.find(c => c.id === item.categoria);
   const pesoItem = (Number(item.qtd) * Number(item.peso || 0)).toFixed(2);
+  const precoItem = Number(item.preco || 0);
+  const valorTotal = (precoItem * Number(item.qtd || 0)).toFixed(0);
+
+  const linhaPreco = precoItem > 0
+    ? `<div style="font-size:0.75rem;color:#00c853;margin-top:2px;">💰 R$ ${precoItem}/un • Total: R$ ${valorTotal}</div>`
+    : '';
+
   card.innerHTML = `
     <div class="icone">${item.foto?`<img src="${item.foto}"/>`:(item.emoji||'📦')}</div>
     <div class="info">
       <h3>${item.nome}</h3>
       <span>${cat?cat.nome:'Sem categoria'} • ${pesoItem} kg</span>
+      ${linhaPreco}
     </div>
     <div class="qtd">x${item.qtd}</div>
     <div class="acoes">
@@ -478,16 +532,17 @@ function salvar() {
   const cat = document.getElementById('itemCategoria').value;
   const peso = parseFloat(document.getElementById('itemPeso').value) || 0;
   const emoji = document.getElementById('itemEmoji').value.trim();
+  const preco = parseFloat(document.getElementById('itemPreco')?.value) || 0;
 
   if (!nome) { alert('Digite o nome do item!'); return; }
 
   if (editandoId) {
     const it = itens.find(i => i.id === editandoId);
-    Object.assign(it, { nome, qtd, categoria:cat, peso, emoji, foto:fotoTemp });
+    Object.assign(it, { nome, qtd, categoria:cat, peso, emoji, preco, foto:fotoTemp });
   } else {
     const novo = {
       id: Date.now().toString(),
-      nome, qtd, categoria:cat, peso, emoji,
+      nome, qtd, categoria:cat, peso, emoji, preco,
       foto: fotoTemp,
       bau: veiculoAberto ? null : abaAtual,
       veiculoId: veiculoAberto || null,
