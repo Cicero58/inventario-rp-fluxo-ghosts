@@ -414,11 +414,12 @@ function criarCardItem(item) {
   card.className = 'card-item';
   const cat = CATEGORIAS.find(c => c.id === item.categoria);
   const pesoItem = (Number(item.qtd) * Number(item.peso || 0)).toFixed(2);
-  const precoItem = Number(item.preco || 0);
-  const valorTotal = (precoItem * Number(item.qtd || 0)).toFixed(0);
+  const precoUnitario = Number(item.preco || 0);
+  const valorTotal = (precoUnitario * Number(item.qtd || 0)).toFixed(0);
 
-  const linhaPreco = precoItem > 0
-    ? `<div style="font-size:0.75rem;color:#00c853;margin-top:2px;">💰 R$ ${precoItem}/un • Total: R$ ${valorTotal}</div>`
+  // Linha que mostra o preço no card
+  const linhaPreco = precoUnitario > 0 
+    ? `<div style="font-size:0.75rem; color:#00c853; margin-top:2px;">💰 R$ ${precoUnitario.toFixed(2)}/un • Total: R$ ${valorTotal}</div>` 
     : '';
 
   card.innerHTML = `
@@ -426,7 +427,7 @@ function criarCardItem(item) {
     <div class="info">
       <h3>${item.nome}</h3>
       <span>${cat?cat.nome:'Sem categoria'} • ${pesoItem} kg</span>
-      ${linhaPreco}
+      ${linhaPreco} <!-- AQUI APARECE O PREÇO -->
     </div>
     <div class="qtd">x${item.qtd}</div>
     <div class="acoes">
@@ -455,6 +456,10 @@ function abrirModal(item=null) {
     document.getElementById('itemQtd').value = item.qtd;
     document.getElementById('itemCategoria').value = item.categoria;
     document.getElementById('itemPeso').value = item.peso || 0;
+    // AQUI CARREGA O PREÇO
+    if(document.getElementById('itemPreco')) {
+      document.getElementById('itemPreco').value = item.preco || 0;
+    }
     document.getElementById('itemEmoji').value = item.emoji || '';
     document.getElementById('preview').innerHTML = item.foto ? `<img src="${item.foto}"/>` : '';
   } else {
@@ -504,11 +509,19 @@ function escolherItemBase(it) {
     document.getElementById('itemNome').value = it.nome;
     document.getElementById('itemCategoria').value = it.cat;
     document.getElementById('itemPeso').value = it.peso;
+    // AQUI CARREGA O PREÇO DA BASE
+    if(document.getElementById('itemPreco')) {
+      document.getElementById('itemPreco').value = it.preco || 0;
+    }
     document.getElementById('itemEmoji').value = it.emoji || '';
   } else {
     document.getElementById('itemNome').value = '';
     document.getElementById('itemCategoria').value = 'outros';
     document.getElementById('itemPeso').value = 0;
+    // ZERA O PREÇO SE FOR PERSONALIZADO
+    if(document.getElementById('itemPreco')) {
+      document.getElementById('itemPreco').value = 0;
+    }
     document.getElementById('itemEmoji').value = '';
   }
   document.getElementById('itemQtd').value = 1;
@@ -532,6 +545,7 @@ function salvar() {
   const cat = document.getElementById('itemCategoria').value;
   const peso = parseFloat(document.getElementById('itemPeso').value) || 0;
   const emoji = document.getElementById('itemEmoji').value.trim();
+  // AQUI PEGA O PREÇO NOVO
   const preco = parseFloat(document.getElementById('itemPreco')?.value) || 0;
 
   if (!nome) { alert('Digite o nome do item!'); return; }
