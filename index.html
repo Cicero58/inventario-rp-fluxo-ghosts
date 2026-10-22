@@ -1,237 +1,237 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Inventário RP</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="style.css" />
-</head>
 <body>
 
-<header>
-  <h1 id="tituloEaster">📦 Inventário RP</h1>
-  <p id="resumo">0 itens • 0 unidades</p>
-  <button id="btnTema" title="Alternar tema">🌙</button>
-  <button id="btnSom" title="Mutar/desmutar música">🔊</button>
-</header>
+<!-- TELA DE LOGIN -->
+<div id="telaLogin" class="tela-login">
+  <div class="login-box">
+    <div class="login-logo">📦</div>
+    <h1>Inventário RP</h1>
+    <p class="login-subtitulo">Fluxo GHOSTS</p>
 
-<nav id="abas"></nav>
-<main id="conteudo"></main>
+    <label>Email</label>
+    <input type="email" id="loginEmail" placeholder="seu@email.com" autocomplete="email" />
 
-<!-- MODAL ITEM -->
-<div id="modal" class="modal escondido">
-  <div class="modal-conteudo">
-    <h2 id="modalTitulo">Novo item</h2>
-    <div id="telaEscolha">
-      <label>🔍 Buscar item</label>
-      <input type="text" id="buscaItem" placeholder="Digite o nome..." />
-      <div class="lista-itens" id="listaItens"></div>
-    </div>
-    <div id="telaForm" style="display:none">
-      <label>Nome do item</label>
-      <input type="text" id="itemNome" placeholder="Ex: Pistola" />
-      <label>Quantidade</label>
-      <input type="number" id="itemQtd" min="1" value="1" />
-      <label>Categoria</label>
-      <select id="itemCategoria"></select>
-      <label>Peso por unidade (kg)</label>
-      <input type="number" id="itemPeso" step="0.01" min="0" value="0" />
-      <label>Preço de Venda (R$)</label>
-      <input type="number" id="itemPreco" step="0.01" min="0" value="0" />
-      <label>Emoji (opcional)</label>
-      <input type="text" id="itemEmoji" placeholder="🔫" maxlength="4" />
-      <label>Foto (opcional)</label>
-      <input type="file" id="itemFoto" accept="image/*" />
-      <div class="preview" id="preview"></div>
-    </div>
-    <div class="botoes">
-      <button id="btnCancelar" class="secundario">Cancelar</button>
-      <button id="btnVoltar" class="secundario" style="display:none">← Voltar</button>
-      <button id="btnSalvar">Salvar</button>
+    <label>Senha</label>
+    <input type="password" id="loginSenha" placeholder="••••••••" autocomplete="current-password" />
+
+    <div id="loginErro" class="login-erro escondido"></div>
+
+    <button id="btnEntrar" class="btn-login">Entrar</button>
+
+    <div class="login-links">
+      <a href="#" id="btnEsqueciSenha">Esqueci a senha</a>
     </div>
   </div>
 </div>
 
-<!-- MODAL VEÍCULO -->
-<div id="modalVeiculo" class="modal escondido">
-  <div class="modal-conteudo">
-    <h2 id="modalVeiculoTitulo">Novo veículo</h2>
-    <label>Nome do veículo</label>
-    <input type="text" id="veicNome" placeholder="Ex: 24Model3" />
-    <label>Tipo</label>
-    <select id="veicTipo">
-      <option value="carro">🚗 Carro</option>
-      <option value="moto">🏍️ Moto</option>
-      <option value="helicoptero">🚁 Helicóptero</option>
-      <option value="aviao">✈️ Avião</option>
-      <option value="barco">🚤 Barco</option>
-      <option value="outro">📦 Outro</option>
-    </select>
-    <label>Vaga (opcional)</label>
-    <input type="text" id="veicVaga" placeholder="Ex: Vaga 01" />
-    <label>Capacidade do baú (kg)</label>
-    <input type="number" id="veicCap" min="0" value="500" />
-    <div class="botoes">
-      <button id="btnCancelarVeic" class="secundario">Cancelar</button>
-      <button id="btnSalvarVeic">Salvar</button>
-    </div>
-  </div>
-</div>
+<!-- APP (só aparece depois de logar) -->
+<div id="appPrincipal" class="escondido">
 
-<!-- MODAL CAPACIDADE -->
-<div id="modalCap" class="modal escondido">
-  <div class="modal-conteudo">
-    <h2>Editar capacidade</h2>
-    <label>Capacidade do baú (kg)</label>
-    <input type="number" id="capValor" min="0" value="150" />
-    <div class="botoes">
-      <button id="btnCancelarCap" class="secundario">Cancelar</button>
-      <button id="btnSalvarCap">Salvar</button>
-    </div>
-  </div>
-</div>
+  <header>
+    <h1 id="tituloEaster">📦 Inventário RP</h1>
+    <p id="resumo">0 itens • 0 unidades</p>
+    <button id="btnTema" title="Alternar tema">🌙</button>
+    <button id="btnSom" title="Mutar/desmutar música">🔊</button>
+    <button id="btnLogout" title="Sair">🚪</button>
+  </header>
 
-<!-- MODAL TIPO DE PONTO -->
-<div id="modalTipo" class="modal escondido">
-  <div class="modal-conteudo">
-    <h2 id="modalTipoTitulo">Novo tipo de ponto</h2>
-    <label>Nome do tipo</label>
-    <input type="text" id="tipoNome" placeholder="Ex: Mansão, Hospital, Loja..." />
-    <label>Emoji / Ícone</label>
-    <input type="text" id="tipoEmoji" placeholder="🏠" maxlength="4" />
-    <label>Cor</label>
-    <input type="color" id="tipoCor" value="#4a7dff" />
-    <label>Categoria (opcional)</label>
-    <input type="text" id="tipoCategoria" placeholder="Ex: Casas, Empregos, Lojas..." />
-    <div class="botoes">
-      <button id="btnCancelarTipo" class="secundario">Cancelar</button>
-      <button id="btnSalvarTipo">Salvar</button>
-    </div>
-  </div>
-</div>
+  <nav id="abas"></nav>
+  <main id="conteudo"></main>
 
-<!-- MODAL MARCADOR -->
-<div id="modalMarcador" class="modal escondido">
-  <div class="modal-conteudo">
-    <h2 id="modalMarcadorTitulo">Novo ponto no mapa</h2>
-    <label>Nome do local *</label>
-    <input type="text" id="marcNome" placeholder="Ex: Mansão do João" />
-    <label>Tipo de ponto</label>
-    <select id="marcTipo"></select>
-    <label>🔢 Número da Fac (opcional)</label>
-    <input type="text" id="marcNumeroFac" placeholder="Ex: 12" />
-    <label>🎯 Produção (opcional)</label>
-    <select id="marcProducao">
-      <option value="">— Nenhuma —</option>
-      <option value="Armas">🔫 Armas</option>
-      <option value="Munições">💥 Munições</option>
-      <option value="Drogas">💊 Drogas</option>
-      <option value="Muambas">📦 Muambas</option>
-      <option value="Lavagem">💰 Lavagem de Dinheiro</option>
-    </select>
-    <label>📞 Número / Telefone (opcional)</label>
-    <input type="text" id="marcNumero" placeholder="Ex: 555-1234" />
-    <label>👤 Dono / Responsável (opcional)</label>
-    <input type="text" id="marcDono" placeholder="Ex: João Silva" />
-    <label>📝 Descrição / Observação (opcional)</label>
-    <textarea id="marcDesc" placeholder="Ex: Casa grande, 2 andares..." rows="3" style="width:100%;padding:10px;background:var(--bg-3);border:1px solid var(--borda);border-radius:8px;color:var(--texto);font-family:inherit;resize:vertical;"></textarea>
-    <label>🖼️ Foto do ponto (opcional)</label>
-    <input type="file" id="marcFoto" accept="image/*" />
-    <div class="preview" id="previewMarc"></div>
-    <label>📦 Vincular a um baú (opcional)</label>
-    <select id="marcRef">
-      <option value="">— Nenhum —</option>
-    </select>
-    <div class="botoes">
-      <button id="btnCancelarMarc" class="secundario">Cancelar</button>
-      <button id="btnSalvarMarc">Salvar</button>
-    </div>
-  </div>
-</div>
-
-<!-- MAPA -->
-<div id="mapa-container">
-  <div id="mapa-header">
-    <h2>🗺️ Mapa Interativo</h2>
-    <div class="botoes">
-      <button id="btnModoAdd">📍 Marcar Local</button>
-      <button id="btnToggleCor" class="sec">🎨 Marcadores</button>
-      <button id="btnGerenciarTipos" class="sec">🏷️ Tipos</button>
-      <button id="btnTrocarEstilo" class="sec">🗺️ Estilo</button>
-      <button id="btnFecharMapa" class="sec">✕ Fechar</button>
-    </div>
-  </div>
-  <div id="mapa-corpo">
-    <div id="mapa"></div>
-    <div id="mapa-busca">
-      <input type="text" id="buscaMapa" placeholder="🔍 Buscar ponto..." />
-      <div id="buscaResultados" class="escondido"></div>
-    </div>
-    <aside id="legenda">
-      <h3>📋 Legenda</h3>
-      <div id="legenda-lista"></div>
-      <div class="legenda-acoes">
-        <button id="btnMarcarTodos">✅ Todos</button>
-        <button id="btnDesmarcarTodos">⬜ Nenhum</button>
+  <!-- MODAL ITEM -->
+  <div id="modal" class="modal escondido">
+    <div class="modal-conteudo">
+      <h2 id="modalTitulo">Novo item</h2>
+      <div id="telaEscolha">
+        <label>🔍 Buscar item</label>
+        <input type="text" id="buscaItem" placeholder="Digite o nome..." />
+        <div class="lista-itens" id="listaItens"></div>
       </div>
-    </aside>
+      <div id="telaForm" style="display:none">
+        <label>Nome do item</label>
+        <input type="text" id="itemNome" placeholder="Ex: Pistola" />
+        <label>Quantidade</label>
+        <input type="number" id="itemQtd" min="1" value="1" />
+        <label>Categoria</label>
+        <select id="itemCategoria"></select>
+        <label>Peso por unidade (kg)</label>
+        <input type="number" id="itemPeso" step="0.01" min="0" value="0" />
+        <label>Preço de Venda (R$)</label>
+        <input type="number" id="itemPreco" step="0.01" min="0" value="0" />
+        <label>Emoji (opcional)</label>
+        <input type="text" id="itemEmoji" placeholder="🔫" maxlength="4" />
+        <label>Foto (opcional)</label>
+        <input type="file" id="itemFoto" accept="image/*" />
+        <div class="preview" id="preview"></div>
+      </div>
+      <div class="botoes">
+        <button id="btnCancelar" class="secundario">Cancelar</button>
+        <button id="btnVoltar" class="secundario" style="display:none">← Voltar</button>
+        <button id="btnSalvar">Salvar</button>
+      </div>
+    </div>
   </div>
-</div>
 
-<!-- MODAL GERENCIAR TIPOS -->
-<div id="modalGerenciarTipos" class="modal escondido">
-  <div class="modal-conteudo">
-    <h2>🏷️ Tipos de ponto</h2>
-    <button id="btnNovoTipo" style="width:100%;padding:12px;background:#4a7dff;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:bold;margin-bottom:12px;">➕ Novo tipo</button>
-    <div id="listaTipos" style="max-height:400px;overflow-y:auto;"></div>
-    <div class="botoes">
-      <button id="btnFecharGerenciar" class="secundario">Fechar</button>
+  <!-- MODAL VEÍCULO -->
+  <div id="modalVeiculo" class="modal escondido">
+    <div class="modal-conteudo">
+      <h2 id="modalVeiculoTitulo">Novo veículo</h2>
+      <label>Nome do veículo</label>
+      <input type="text" id="veicNome" placeholder="Ex: 24Model3" />
+      <label>Tipo</label>
+      <select id="veicTipo">
+        <option value="carro">🚗 Carro</option>
+        <option value="moto">🏍️ Moto</option>
+        <option value="helicoptero">🚁 Helicóptero</option>
+        <option value="aviao">✈️ Avião</option>
+        <option value="barco">🚤 Barco</option>
+        <option value="outro">📦 Outro</option>
+      </select>
+      <label>Vaga (opcional)</label>
+      <input type="text" id="veicVaga" placeholder="Ex: Vaga 01" />
+      <label>Capacidade do baú (kg)</label>
+      <input type="number" id="veicCap" min="0" value="500" />
+      <div class="botoes">
+        <button id="btnCancelarVeic" class="secundario">Cancelar</button>
+        <button id="btnSalvarVeic">Salvar</button>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- MODAL CONFIRMAR IMPORTAÇÃO -->
-<div id="modalImportar" class="modal escondido">
-  <div class="modal-conteudo">
-    <h2>📥 Importar backup</h2>
-    <p style="font-size:0.9rem;color:var(--texto-sec);line-height:1.5;margin-bottom:16px;">
-      O arquivo foi lido com sucesso!<br>
-      Como você quer aplicar os dados?
-    </p>
-    <div style="background:var(--bg-3);padding:12px;border-radius:8px;font-size:0.85rem;margin-bottom:16px;">
-      <div style="margin-bottom:6px;">📦 <strong id="previewQtdItens">0</strong> itens</div>
-      <div style="margin-bottom:6px;">🚗 <strong id="previewQtdVeiculos">0</strong> veículos</div>
-      <div style="margin-bottom:6px;">📍 <strong id="previewQtdMarcadores">0</strong> marcadores</div>
-      <div>🏷️ <strong id="previewQtdTipos">0</strong> tipos de ponto</div>
-    </div>
-    <div class="botoes" style="flex-direction:column;">
-      <button id="btnImportSubstituir" style="background:var(--vermelho);color:white;">🔄 Substituir tudo</button>
-      <button id="btnImportJuntar" style="background:var(--azul);color:white;">➕ Juntar com atual</button>
-      <button id="btnImportCancelar" class="secundario">❌ Cancelar</button>
+  <!-- MODAL CAPACIDADE -->
+  <div id="modalCap" class="modal escondido">
+    <div class="modal-conteudo">
+      <h2>Editar capacidade</h2>
+      <label>Capacidade do baú (kg)</label>
+      <input type="number" id="capValor" min="0" value="150" />
+      <div class="botoes">
+        <button id="btnCancelarCap" class="secundario">Cancelar</button>
+        <button id="btnSalvarCap">Salvar</button>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- MODAL ENVIAR NOTIFICAÇÃO (ADMIN) -->
-<div id="modalNotificacao" class="modal escondido">
-  <div class="modal-conteudo">
-    <h2>🔔 Enviar Notificação</h2>
-    <label>Título</label>
-    <input type="text" id="notifTitulo" placeholder="Ex: 🎉 Evento da Facção" />
-    <label>Mensagem</label>
-    <textarea id="notifMsg" placeholder="Ex: Reunião hoje às 20h no QG" rows="4" style="width:100%;padding:10px;background:var(--bg-3);border:1px solid var(--borda);border-radius:8px;color:var(--texto);font-family:inherit;resize:vertical;"></textarea>
-    <label>Quem vai receber?</label>
-    <select id="notifPublico">
-      <option value="all">🌐 Todos os usuários</option>
-      <option value="fac">👥 Só a Facção</option>
-    </select>
-    <div class="botoes">
-      <button id="btnCancelarNotif" class="secundario">Cancelar</button>
-      <button id="btnEnviarNotif">🔔 Enviar</button>
+  <!-- MODAL TIPO DE PONTO -->
+  <div id="modalTipo" class="modal escondido">
+    <div class="modal-conteudo">
+      <h2 id="modalTipoTitulo">Novo tipo de ponto</h2>
+      <label>Nome do tipo</label>
+      <input type="text" id="tipoNome" placeholder="Ex: Mansão, Hospital, Loja..." />
+      <label>Emoji / Ícone</label>
+      <input type="text" id="tipoEmoji" placeholder="🏠" maxlength="4" />
+      <label>Cor</label>
+      <input type="color" id="tipoCor" value="#4a7dff" />
+      <label>Categoria (opcional)</label>
+      <input type="text" id="tipoCategoria" placeholder="Ex: Casas, Empregos, Lojas..." />
+      <div class="botoes">
+        <button id="btnCancelarTipo" class="secundario">Cancelar</button>
+        <button id="btnSalvarTipo">Salvar</button>
+      </div>
     </div>
   </div>
-</div>
+
+  <!-- MODAL MARCADOR -->
+  <div id="modalMarcador" class="modal escondido">
+    <div class="modal-conteudo">
+      <h2 id="modalMarcadorTitulo">Novo ponto no mapa</h2>
+      <label>Nome do local *</label>
+      <input type="text" id="marcNome" placeholder="Ex: Mansão do João" />
+      <label>Tipo de ponto</label>
+      <select id="marcTipo"></select>
+      <label>🔢 Número da Fac (opcional)</label>
+      <input type="text" id="marcNumeroFac" placeholder="Ex: 12" />
+      <label>🎯 Produção (opcional)</label>
+      <select id="marcProducao">
+        <option value="">— Nenhuma —</option>
+        <option value="Armas">🔫 Armas</option>
+        <option value="Munições">💥 Munições</option>
+        <option value="Drogas">💊 Drogas</option>
+        <option value="Muambas">📦 Muambas</option>
+        <option value="Lavagem">💰 Lavagem de Dinheiro</option>
+      </select>
+      <label>📞 Número / Telefone (opcional)</label>
+      <input type="text" id="marcNumero" placeholder="Ex: 555-1234" />
+      <label>👤 Dono / Responsável (opcional)</label>
+      <input type="text" id="marcDono" placeholder="Ex: João Silva" />
+      <label>📝 Descrição / Observação (opcional)</label>
+      <textarea id="marcDesc" placeholder="Ex: Casa grande, 2 andares..." rows="3" style="width:100%;padding:10px;background:var(--bg-3);border:1px solid var(--borda);border-radius:8px;color:var(--texto);font-family:inherit;resize:vertical;"></textarea>
+      <label>🖼️ Foto do ponto (opcional)</label>
+      <input type="file" id="marcFoto" accept="image/*" />
+      <div class="preview" id="previewMarc"></div>
+      <label>📦 Vincular a um baú (opcional)</label>
+      <select id="marcRef">
+        <option value="">— Nenhum —</option>
+      </select>
+      <div class="botoes">
+        <button id="btnCancelarMarc" class="secundario">Cancelar</button>
+        <button id="btnSalvarMarc">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAPA -->
+  <div id="mapa-container">
+    <div id="mapa-header">
+      <h2>🗺️ Mapa Interativo</h2>
+      <div class="botoes">
+        <button id="btnModoAdd">📍 Marcar Local</button>
+        <button id="btnToggleCor" class="sec">🎨 Marcadores</button>
+        <button id="btnGerenciarTipos" class="sec">🏷️ Tipos</button>
+        <button id="btnTrocarEstilo" class="sec">🗺️ Estilo</button>
+        <button id="btnFecharMapa" class="sec">✕ Fechar</button>
+      </div>
+    </div>
+    <div id="mapa-corpo">
+      <div id="mapa"></div>
+      <div id="mapa-busca">
+        <input type="text" id="buscaMapa" placeholder="🔍 Buscar ponto..." />
+        <div id="buscaResultados" class="escondido"></div>
+      </div>
+      <aside id="legenda">
+        <h3>📋 Legenda</h3>
+        <div id="legenda-lista"></div>
+        <div class="legenda-acoes">
+          <button id="btnMarcarTodos">✅ Todos</button>
+          <button id="btnDesmarcarTodos">⬜ Nenhum</button>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- MODAL GERENCIAR TIPOS -->
+  <div id="modalGerenciarTipos" class="modal escondido">
+    <div class="modal-conteudo">
+      <h2>🏷️ Tipos de ponto</h2>
+      <button id="btnNovoTipo" style="width:100%;padding:12px;background:#4a7dff;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:bold;margin-bottom:12px;">➕ Novo tipo</button>
+      <div id="listaTipos" style="max-height:400px;overflow-y:auto;"></div>
+      <div class="botoes">
+        <button id="btnFecharGerenciar" class="secundario">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL CONFIRMAR IMPORTAÇÃO -->
+  <div id="modalImportar" class="modal escondido">
+    <div class="modal-conteudo">
+      <h2>📥 Importar backup</h2>
+      <p style="font-size:0.9rem;color:var(--texto-sec);line-height:1.5;margin-bottom:16px;">
+        O arquivo foi lido com sucesso!<br>
+        Como você quer aplicar os dados?
+      </p>
+      <div style="background:var(--bg-3);padding:12px;border-radius:8px;font-size:0.85rem;margin-bottom:16px;">
+        <div style="margin-bottom:6px;">📦 <strong id="previewQtdItens">0</strong> itens</div>
+        <div style="margin-bottom:6px;">🚗 <strong id="previewQtdVeiculos">0</strong> veículos</div>
+        <div style="margin-bottom:6px;">📍 <strong id="previewQtdMarcadores">0</strong> marcadores</div>
+        <div>🏷️ <strong id="previewQtdTipos">0</strong> tipos de ponto</div>
+      </div>
+      <div class="botoes" style="flex-direction:column;">
+        <button id="btnImportSubstituir" style="background:var(--vermelho);color:white;">🔄 Substituir tudo</button>
+        <button id="btnImportJuntar" style="background:var(--azul);color:white;">➕ Juntar com atual</button>
+        <button id="btnImportCancelar" class="secundario">❌ Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- FECHA appPrincipal -->
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="script.js"></script>
@@ -267,14 +267,120 @@
   window.auth = firebase.auth();
   window.db = firebase.firestore();
   console.log('🔥 Firebase inicializado com sucesso!');
+
+  // ===== LOGIN =====
+  window.tipoUsuario = null; // 'admin' ou 'cliente'
+
+  // Botão Entrar
+  document.getElementById('btnEntrar').onclick = async () => {
+    const email = document.getElementById('loginEmail').value.trim();
+    const senha = document.getElementById('loginSenha').value;
+    const erroEl = document.getElementById('loginErro');
+
+    erroEl.classList.add('escondido');
+
+    if (!email || !senha) {
+      erroEl.textContent = '❌ Preencha email e senha';
+      erroEl.classList.remove('escondido');
+      return;
+    }
+
+    try {
+      const userCredential = await firebase.auth().signInWithEmailAndPassword(email, senha);
+      const user = userCredential.user;
+      console.log('✅ Logado como:', user.email);
+    } catch (err) {
+      let msg = '❌ Erro ao entrar';
+      if (err.code === 'auth/user-not-found') msg = '❌ Email não cadastrado';
+      else if (err.code === 'auth/wrong-password') msg = '❌ Senha incorreta';
+      else if (err.code === 'auth/invalid-email') msg = '❌ Email inválido';
+      else if (err.code === 'auth/too-many-requests') msg = '❌ Muitas tentativas. Tente mais tarde.';
+      else msg = '❌ ' + err.message;
+
+      erroEl.textContent = msg;
+      erroEl.classList.remove('escondido');
+    }
+  };
+
+  // Enter no campo senha = login
+  document.getElementById('loginSenha').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') document.getElementById('btnEntrar').click();
+  });
+
+  // Botão Esqueci a senha
+  document.getElementById('btnEsqueciSenha').onclick = async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('loginEmail').value.trim();
+    const erroEl = document.getElementById('loginErro');
+
+    if (!email) {
+      erroEl.textContent = '❌ Digite seu email primeiro';
+      erroEl.classList.remove('escondido');
+      return;
+    }
+
+    try {
+      await firebase.auth().sendPasswordResetEmail(email);
+      erroEl.textContent = '✅ Email de recuperação enviado!';
+      erroEl.style.color = '#00c853';
+      erroEl.classList.remove('escondido');
+      setTimeout(() => {
+        erroEl.classList.add('escondido');
+        erroEl.style.color = '';
+      }, 5000);
+    } catch (err) {
+      erroEl.textContent = '❌ ' + err.message;
+      erroEl.classList.remove('escondido');
+    }
+  };
+
+  // Verifica se tá logado (ao carregar)
+  firebase.auth().onAuthStateChanged(async (user) => {
+    if (user) {
+      // Logado
+      document.getElementById('telaLogin').classList.add('escondido');
+      document.getElementById('appPrincipal').classList.remove('escondido');
+
+      // Busca o tipo (admin ou cliente) no Firestore
+      try {
+        const doc = await firebase.firestore().collection('usuarios').doc(user.uid).get();
+        if (doc.exists) {
+          window.tipoUsuario = doc.data().tipo || 'cliente';
+          console.log('👤 Tipo:', window.tipoUsuario);
+        } else {
+          // Não tem documento → cria como cliente
+          await firebase.firestore().collection('usuarios').doc(user.uid).set({
+            email: user.email,
+            tipo: 'cliente',
+            criadoEm: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          window.tipoUsuario = 'cliente';
+        }
+      } catch (e) {
+        console.log('Erro ao buscar tipo:', e);
+      }
+
+      // Inicia o app
+      if (typeof init === 'function') init();
+    } else {
+      // Não logado
+      document.getElementById('telaLogin').classList.remove('escondido');
+      document.getElementById('appPrincipal').classList.add('escondido');
+    }
+  });
+
+  // Logout
+  document.getElementById('btnLogout').onclick = () => {
+    if (confirm('Sair da conta?')) {
+      firebase.auth().signOut();
+    }
+  };
 </script>
 
 <!-- 🌟 EASTER EGGS 🌟 -->
 <script>
   console.log('%c🎮 Inventário RP — Fluxo GHOSTS', 'color: #7c4dff; font-size: 20px; font-weight: bold; text-shadow: 0 0 10px #7c4dff;');
   console.log('%c👋 Eaí, curioso! Bem-vindo ao console.', 'color: #00c853; font-size: 14px;');
-  console.log('%c💡 Sabia que tem um easter egg? Clica 5 vezes no título!', 'color: #ffaa00; font-size: 13px;');
-  console.log('%c🚀 Feito com ❤️ pela Fluxo GHOSTS', 'color: #4a7dff; font-size: 12px;');
 
   let cliques = 0;
   const titulo = document.getElementById('tituloEaster');
@@ -283,16 +389,11 @@
     titulo.addEventListener('click', () => {
       cliques++;
       if (cliques === 5) {
-        alert('🎉 PARABÉNS! Você achou o easter egg!\n\n🎮 Fluxo GHOSTS\n👑 Líder: Cicero\n💜 Feito com carinho pra galera');
-        console.log('%c🎉 EASTER EGG DESBLOQUEADO!', 'color: #ff00ff; font-size: 18px; font-weight: bold;');
+        alert('🎉 PARABÉNS! Você achou o easter egg!\n\n🎮 Fluxo GHOSTS\n👑 Líder: Cicero');
         cliques = 0;
       }
     });
   }
-
-  const agora = new Date();
-  const hora = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-  console.log(`%c🕐 App carregado às ${hora}`, 'color: #8b93a7; font-size: 11px;');
 </script>
 
 </body>

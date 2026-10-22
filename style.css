@@ -1536,3 +1536,179 @@ main {
   border-color: var(--vermelho);
   animation: pulsar 1.5s ease-in-out infinite;
 }
+
+/* ===== TELA DE LOGIN ===== */
+.tela-login {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(135deg, #0a0014 0%, #1a0a2e 50%, #0a0014 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 99999;
+  animation: fadeIn 0.5s ease;
+}
+
+.tela-login.escondido {
+  display: none;
+}
+
+.login-box {
+  background: rgba(20, 10, 36, 0.9);
+  border: 2px solid var(--azul);
+  border-radius: 16px;
+  padding: 40px 32px;
+  max-width: 400px;
+  width: 100%;
+  box-shadow: 0 0 60px rgba(74, 125, 255, 0.4), 0 0 100px rgba(217, 70, 239, 0.2);
+  animation: slideUp 0.5s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.login-box::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(45deg, transparent, rgba(74, 125, 255, 0.1), transparent);
+  animation: brilhoLogin 3s infinite;
+  pointer-events: none;
+}
+
+@keyframes brilhoLogin {
+  0% { transform: translateX(-100%) rotate(45deg); }
+  100% { transform: translateX(100%) rotate(45deg); }
+}
+
+.login-logo {
+  font-size: 4rem;
+  text-align: center;
+  margin-bottom: 8px;
+  animation: pulsar 2s ease-in-out infinite;
+}
+
+.login-box h1 {
+  text-align: center;
+  font-size: 1.6rem;
+  margin-bottom: 4px;
+  color: var(--texto);
+}
+
+.login-subtitulo {
+  text-align: center;
+  color: var(--azul);
+  font-size: 0.85rem;
+  margin-bottom: 28px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  font-weight: bold;
+  text-shadow: 0 0 10px var(--azul);
+}
+
+.login-box label {
+  display: block;
+  margin-top: 16px;
+  margin-bottom: 6px;
+  font-size: 0.85rem;
+  color: var(--texto-sec);
+}
+
+.login-box input {
+  width: 100%;
+  padding: 12px 14px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  color: var(--texto);
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+}
+
+.login-box input:focus {
+  outline: none;
+  border-color: var(--azul);
+  box-shadow: 0 0 0 3px rgba(74, 125, 255, 0.2), 0 0 20px rgba(74, 125, 255, 0.3);
+  transform: scale(1.02);
+}
+
+.login-erro {
+  margin-top: 12px;
+  padding: 10px;
+  background: rgba(255, 74, 74, 0.15);
+  border: 1px solid var(--vermelho);
+  border-radius: 8px;
+  color: var(--vermelho);
+  font-size: 0.85rem;
+  text-align: center;
+  animation: tremer 0.3s ease;
+}
+
+.btn-login {
+  width: 100%;
+  padding: 14px;
+  margin-top: 20px;
+  background: linear-gradient(135deg, var(--azul), var(--roxo));
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(74, 125, 255, 0.4);
+}
+
+.btn-login:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(74, 125, 255, 0.6);
+}
+
+.btn-login:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.login-links {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.login-links a {
+  color: var(--texto-sec);
+  font-size: 0.85rem;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.login-links a:hover {
+  color: var(--azul);
+  text-shadow: 0 0 10px var(--azul);
+}
+
+#appPrincipal.escondido {
+  display: none;
+}
+
+/* Botão de logout */
+#btnLogout {
+  position: absolute;
+  right: 108px;
+  top: 12px;
+  background: var(--bg-3);
+  border: none;
+  color: var(--texto);
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+#btnLogout:hover {
+  background: var(--vermelho);
+  transform: scale(1.15) rotate(10deg);
+}
