@@ -1724,3 +1724,6 @@ main {
 #telaLogin.escondido {
   display: none !important;
 }
+#loginErro.escondido {
+  display: none !important;
+}
