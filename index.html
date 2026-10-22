@@ -250,6 +250,25 @@
   });
 </script>
 
+<!-- Firebase SDK (versão compat) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyCo53Ur5V7YJd771P8tdlrqlTROPNe2lME",
+    authDomain: "inventario-rp-fluxo.firebaseapp.com",
+    projectId: "inventario-rp-fluxo",
+    storageBucket: "inventario-rp-fluxo.firebasestorage.app",
+    messagingSenderId: "776095531310",
+    appId: "1:776095531310:web:eb9f7f3ed7ba4926b27abf"
+  };
+  firebase.initializeApp(firebaseConfig);
+  window.auth = firebase.auth();
+  window.db = firebase.firestore();
+  console.log('🔥 Firebase inicializado com sucesso!');
+</script>
+
 <!-- 🌟 EASTER EGGS 🌟 -->
 <script>
   console.log('%c🎮 Inventário RP — Fluxo GHOSTS', 'color: #7c4dff; font-size: 20px; font-weight: bold; text-shadow: 0 0 10px #7c4dff;');
