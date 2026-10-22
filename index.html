@@ -1,3 +1,13 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Inventário RP</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<!-- AQUI ESTÁ O CSS COM O CACHE BUSTING -->
+<link rel="stylesheet" href="style.css?v=3" />
+</head>
 <body>
 
 <!-- TELA DE LOGIN -->
@@ -339,7 +349,7 @@
     if (user) {
       // Logado
       document.getElementById('telaLogin').classList.add('escondido');
-      document.getElementById('appPrincipal').classList.remove('escondido');
+      document.getElementById('appPrincipal').classList.add('visivel');
 
       // Busca o tipo (admin ou cliente) no Firestore
       try {
@@ -365,7 +375,7 @@
     } else {
       // Não logado
       document.getElementById('telaLogin').classList.remove('escondido');
-      document.getElementById('appPrincipal').classList.add('escondido');
+      document.getElementById('appPrincipal').classList.remove('visivel');
     }
   });
 

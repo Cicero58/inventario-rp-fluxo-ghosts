@@ -1712,3 +1712,15 @@ main {
   background: var(--vermelho);
   transform: scale(1.15) rotate(10deg);
 }
+/* ===== CORREÇÃO DEFINITIVA DE VISIBILIDADE ===== */
+#appPrincipal {
+  display: none !important;
+}
+
+#appPrincipal.visivel {
+  display: block !important;
+}
+
+#telaLogin.escondido {
+  display: none !important;
+}
