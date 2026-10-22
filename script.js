@@ -129,10 +129,13 @@ const resumoEl = document.getElementById('resumo');
 
 // ===== INIT =====
 function init() {
-  montarAbas();
-  montarCategorias();
-  carregarTema();
-  render();
+  // Verifica se o Firebase já carregou e se tem usuário
+  if (window.firebase && firebase.auth().currentUser) {
+    montarAbas();
+    montarCategorias();
+    carregarTema();
+    render();
+  }
 }
 
 // ===== TEMA (3 opções) =====
@@ -1753,3 +1756,12 @@ renderConfiguracoes = function() {
 };
 
 init();
+// ===== ESCONDE O APP NO INÍCIO =====
+// Esconde o app principal e mostra só a tela de login
+document.addEventListener('DOMContentLoaded', () => {
+  const appPrincipal = document.getElementById('appPrincipal');
+  const telaLogin = document.getElementById('telaLogin');
+  
+  if (appPrincipal) appPrincipal.classList.add('escondido');
+  if (telaLogin) telaLogin.classList.remove('escondido');
+});
