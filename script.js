@@ -129,7 +129,7 @@ const resumoEl = document.getElementById('resumo');
 
 // ===== INIT =====
 function init() {
-  // Verifica se o Firebase já carregou e se tem usuário
+  // Só roda se tiver logado
   if (window.firebase && firebase.auth().currentUser) {
     montarAbas();
     montarCategorias();
@@ -1756,12 +1756,10 @@ renderConfiguracoes = function() {
 };
 
 init();
-// ===== ESCONDE O APP NO INÍCIO =====
-// Esconde o app principal e mostra só a tela de login
+// Esconde o app e mostra só o login ao carregar
 document.addEventListener('DOMContentLoaded', () => {
-  const appPrincipal = document.getElementById('appPrincipal');
-  const telaLogin = document.getElementById('telaLogin');
-  
-  if (appPrincipal) appPrincipal.classList.add('escondido');
-  if (telaLogin) telaLogin.classList.remove('escondido');
+  const app = document.getElementById('appPrincipal');
+  const login = document.getElementById('telaLogin');
+  if (app) app.classList.add('escondido');
+  if (login) login.classList.remove('escondido');
 });
