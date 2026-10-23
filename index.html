@@ -56,21 +56,27 @@
         <input type="text" id="buscaItem" placeholder="Digite o nome..." />
         <div class="lista-itens" id="listaItens"></div>
       </div>
-      <div id="telaForm" style="display:none">
+            <div id="telaForm" style="display:none">
         <label>Nome do item</label>
-        <input type="text" id="itemNome" placeholder="Ex: Pistola" />
+        <input type="text" id="itemNome" placeholder="Ex: Pistola" disabled />
+        
         <label>Quantidade</label>
         <input type="number" id="itemQtd" min="1" value="1" />
+        
         <label>Categoria</label>
-        <select id="itemCategoria"></select>
+        <select id="itemCategoria" disabled></select>
+        
         <label>Peso por unidade (kg)</label>
-        <input type="number" id="itemPeso" step="0.01" min="0" value="0" />
+        <input type="number" id="itemPeso" step="0.01" min="0" value="0" disabled />
+        
         <label>Preço de Venda (R$)</label>
-        <input type="number" id="itemPreco" step="0.01" min="0" value="0" />
+        <input type="number" id="itemPreco" step="0.01" min="0" value="0" disabled />
+        
         <label>Emoji (opcional)</label>
-        <input type="text" id="itemEmoji" placeholder="🔫" maxlength="4" />
+        <input type="text" id="itemEmoji" placeholder="🔫" maxlength="4" disabled />
+        
         <label>Foto (opcional)</label>
-        <input type="file" id="itemFoto" accept="image/*" />
+        <input type="file" id="itemFoto" accept="image/*" disabled />
         <div class="preview" id="preview"></div>
       </div>
       <div class="botoes">

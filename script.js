@@ -467,6 +467,14 @@ function abrirModal(item=null) {
   fotoTemp = item ? item.foto : null;
   itemBaseSelecionado = null;
 
+  // 👇 BLOCO NOVO: LIBERA CAMPOS PRA ADMIN, BLOQUEIA PRA CLIENTE 👇
+  const camposBloqueados = ['itemNome', 'itemCategoria', 'itemPeso', 'itemPreco', 'itemEmoji', 'itemFoto'];
+  camposBloqueados.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = !isAdmin();
+  });
+  // 👆 FIM DO BLOCO NOVO 👆
+
   document.getElementById('modalTitulo').textContent = item ? 'Editar item' : 'Novo item';
   document.getElementById('telaEscolha').style.display = item ? 'none' : 'block';
   document.getElementById('telaForm').style.display = item ? 'block' : 'none';
@@ -554,19 +562,35 @@ function fecharModal() {
 }
 
 function salvar() {
-  const nome = document.getElementById('itemNome').value.trim();
   const qtd = parseInt(document.getElementById('itemQtd').value) || 1;
-  const cat = document.getElementById('itemCategoria').value;
-  const peso = parseFloat(document.getElementById('itemPeso').value) || 0;
-  const emoji = document.getElementById('itemEmoji').value.trim();
-  const preco = parseFloat(document.getElementById('itemPreco')?.value) || 0;
-
-  if (!nome) { alert('Digite o nome do item!'); return; }
 
   if (editandoId) {
+    // SE ESTIVER EDITANDO, TEM QUE RESPEITAR A REGRA
     const it = itens.find(i => i.id === editandoId);
-    Object.assign(it, { nome, qtd, categoria:cat, peso, emoji, preco, foto:fotoTemp });
+    
+    if (isAdmin()) {
+      // Admin pode mudar tudo
+      const nome = document.getElementById('itemNome').value.trim();
+      const cat = document.getElementById('itemCategoria').value;
+      const peso = parseFloat(document.getElementById('itemPeso').value) || 0;
+      const emoji = document.getElementById('itemEmoji').value.trim();
+      const preco = parseFloat(document.getElementById('itemPreco')?.value) || 0;
+      if (!nome) { alert('Digite o nome do item!'); return; }
+      Object.assign(it, { nome, qtd, categoria:cat, peso, emoji, preco, foto:fotoTemp });
+    } else {
+      // Cliente SÓ PODE MUDAR A QUANTIDADE
+      it.qtd = qtd;
+    }
   } else {
+    // NOVO ITEM (só acontece pra admin, pq cliente n pode criar)
+    const nome = document.getElementById('itemNome').value.trim();
+    const cat = document.getElementById('itemCategoria').value;
+    const peso = parseFloat(document.getElementById('itemPeso').value) || 0;
+    const emoji = document.getElementById('itemEmoji').value.trim();
+    const preco = parseFloat(document.getElementById('itemPreco')?.value) || 0;
+    
+    if (!nome) { alert('Digite o nome do item!'); return; }
+    
     const novo = {
       id: Date.now().toString(),
       nome, qtd, categoria:cat, peso, emoji, preco,
@@ -576,6 +600,7 @@ function salvar() {
     };
     itens.push(novo);
   }
+  
   salvarStorage();
   fecharModal();
   render();
