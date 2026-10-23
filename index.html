@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Inventário RP</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<!-- AQUI ESTÁ O CSS COM O CACHE BUSTING -->
 <link rel="stylesheet" href="style.css?v=3" />
 </head>
 <body>
@@ -56,25 +55,25 @@
         <input type="text" id="buscaItem" placeholder="Digite o nome..." />
         <div class="lista-itens" id="listaItens"></div>
       </div>
-            <div id="telaForm" style="display:none">
+      <div id="telaForm" style="display:none">
         <label>Nome do item</label>
         <input type="text" id="itemNome" placeholder="Ex: Pistola" disabled />
-        
+
         <label>Quantidade</label>
         <input type="number" id="itemQtd" min="1" value="1" />
-        
+
         <label>Categoria</label>
         <select id="itemCategoria" disabled></select>
-        
+
         <label>Peso por unidade (kg)</label>
         <input type="number" id="itemPeso" step="0.01" min="0" value="0" disabled />
-        
+
         <label>Preço de Venda (R$)</label>
         <input type="number" id="itemPreco" step="0.01" min="0" value="0" disabled />
-        
+
         <label>Emoji (opcional)</label>
         <input type="text" id="itemEmoji" placeholder="🔫" maxlength="4" disabled />
-        
+
         <label>Foto (opcional)</label>
         <input type="file" id="itemFoto" accept="image/*" disabled />
         <div class="preview" id="preview"></div>
@@ -225,7 +224,7 @@
     </div>
   </div>
 
-  <!-- MODAL CONFIRMAR IMPORTAÇÃO -->
+  <!-- MODAL CONFIRMAR IMPORTAÇÃO (mantido mas sem uso obrigatório) -->
   <div id="modalImportar" class="modal escondido">
     <div class="modal-conteudo">
       <h2>📥 Importar backup</h2>
@@ -246,6 +245,7 @@
       </div>
     </div>
   </div>
+
   <!-- PAINEL ADMIN -->
   <div id="modalAdmin" class="modal escondido">
     <div class="modal-conteudo">
@@ -273,29 +273,23 @@
       </div>
     </div>
   </div>
+
 </div><!-- FECHA appPrincipal -->
 
+<!-- ===== SCRIPTS ===== -->
+
+<!-- Leaflet -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="script.js"></script>
 
-<!-- OneSignal SDK -->
-<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-<script>
-  window.OneSignalDeferred = window.OneSignalDeferred || [];
-  OneSignalDeferred.push(async function(OneSignal) {
-    await OneSignal.init({
-      appId: "57614746-34e9-4f8f-903b-dad6b1fe1bfe",
-      serviceWorkerParam: { scope: "/inventario-rp-fluxo-ghosts/" },
-      serviceWorkerPath: "/inventario-rp-fluxo-ghosts/OneSignalSDKWorker.js",
-    });
-    console.log('OneSignal inicializado');
-  });
-</script>
-
-<!-- Firebase SDK (versão compat) -->
+<!-- Firebase SDK (versão compat) — ANTES do script.js -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+<!-- OneSignal SDK (defer pra não bloquear) -->
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+
+<!-- Config do Firebase + auth -->
 <script>
   const firebaseConfig = {
     apiKey: "AIzaSyCo53Ur5V7YJd771P8tdlrqlTROPNe2lME",
@@ -311,14 +305,12 @@
   console.log('🔥 Firebase inicializado com sucesso!');
 
   // ===== LOGIN =====
-  window.tipoUsuario = null; // 'admin' ou 'cliente'
+  window.tipoUsuario = null;
 
-  // Botão Entrar
   document.getElementById('btnEntrar').onclick = async () => {
     const email = document.getElementById('loginEmail').value.trim();
     const senha = document.getElementById('loginSenha').value;
     const erroEl = document.getElementById('loginErro');
-
     erroEl.classList.add('escondido');
 
     if (!email || !senha) {
@@ -338,59 +330,49 @@
       else if (err.code === 'auth/invalid-email') msg = '❌ Email inválido';
       else if (err.code === 'auth/too-many-requests') msg = '❌ Muitas tentativas. Tente mais tarde.';
       else msg = '❌ ' + err.message;
-
       erroEl.textContent = msg;
       erroEl.classList.remove('escondido');
     }
   };
 
-  // Enter no campo senha = login
   document.getElementById('loginSenha').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') document.getElementById('btnEntrar').click();
   });
 
-  // Botão Esqueci a senha
   document.getElementById('btnEsqueciSenha').onclick = async (e) => {
     e.preventDefault();
     const email = document.getElementById('loginEmail').value.trim();
     const erroEl = document.getElementById('loginErro');
-
     if (!email) {
       erroEl.textContent = '❌ Digite seu email primeiro';
       erroEl.classList.remove('escondido');
       return;
     }
-
     try {
       await firebase.auth().sendPasswordResetEmail(email);
       erroEl.textContent = '✅ Email de recuperação enviado!';
       erroEl.style.color = '#00c853';
       erroEl.classList.remove('escondido');
-      setTimeout(() => {
-        erroEl.classList.add('escondido');
-        erroEl.style.color = '';
-      }, 5000);
+      setTimeout(() => { erroEl.classList.add('escondido'); erroEl.style.color = ''; }, 5000);
     } catch (err) {
       erroEl.textContent = '❌ ' + err.message;
       erroEl.classList.remove('escondido');
     }
   };
 
-  // Verifica se tá logado (ao carregar)
+  // Verifica se tá logado
   firebase.auth().onAuthStateChanged(async (user) => {
     if (user) {
-      // Logado
       document.getElementById('telaLogin').classList.add('escondido');
       document.getElementById('appPrincipal').classList.add('visivel');
 
-      // Busca o tipo (admin ou cliente) no Firestore
+      // Busca o tipo no Firestore
       try {
         const doc = await firebase.firestore().collection('usuarios').doc(user.uid).get();
         if (doc.exists) {
           window.tipoUsuario = doc.data().tipo || 'cliente';
           console.log('👤 Tipo:', window.tipoUsuario);
         } else {
-          // Não tem documento → cria como cliente
           await firebase.firestore().collection('usuarios').doc(user.uid).set({
             email: user.email,
             tipo: 'cliente',
@@ -400,12 +382,22 @@
         }
       } catch (e) {
         console.log('Erro ao buscar tipo:', e);
+        window.tipoUsuario = 'cliente';
+      }
+
+      // OneSignal: vincula o dispositivo ao uid
+      if (window.OneSignal) {
+        try {
+          window.OneSignal.login(user.uid);
+          window.OneSignal.Notifications.requestPermission();
+        } catch (e) { console.log('OneSignal login falhou:', e); }
       }
 
       // Inicia o app
       if (typeof init === 'function') init();
     } else {
       // Não logado
+      window.tipoUsuario = null;
       document.getElementById('telaLogin').classList.remove('escondido');
       document.getElementById('appPrincipal').classList.remove('visivel');
     }
@@ -414,9 +406,12 @@
   // Logout
   document.getElementById('btnLogout').onclick = () => {
     if (confirm('Sair da conta?')) {
+      if (typeof pararSyncFirestore === 'function') pararSyncFirestore();
+      window.tipoUsuario = null;
       firebase.auth().signOut();
     }
   };
+
   // ===== PAINEL ADMIN =====
   function abrirPainelAdmin() {
     document.getElementById('modalAdmin').classList.remove('escondido');
@@ -430,16 +425,13 @@
   async function carregarUsuarios() {
     const lista = document.getElementById('listaUsuarios');
     lista.innerHTML = '<div style="text-align:center;padding:20px;color:var(--texto-sec);">⏳ Carregando...</div>';
-
     try {
       const snap = await firebase.firestore().collection('usuarios').get();
       lista.innerHTML = '';
-
       if (snap.empty) {
         lista.innerHTML = '<div style="text-align:center;padding:20px;color:var(--texto-sec);">Nenhum usuário cadastrado.</div>';
         return;
       }
-
       snap.forEach(doc => {
         const u = doc.data();
         const div = document.createElement('div');
@@ -465,22 +457,14 @@
     const senha = document.getElementById('adminSenha').value;
     const tipo = document.getElementById('adminTipo').value;
 
-    if (!email || !senha) {
-      alert('❌ Preencha email e senha');
-      return;
-    }
-
-    if (senha.length < 6) {
-      alert('❌ Senha deve ter no mínimo 6 caracteres');
-      return;
-    }
+    if (!email || !senha) { alert('❌ Preencha email e senha'); return; }
+    if (senha.length < 6) { alert('❌ Senha deve ter no mínimo 6 caracteres'); return; }
 
     try {
-      // Cria o usuário no Auth (sem deslogar o admin atual)
+      // Firebase v9 compat: createUserWithEmailAndPassword mantém o admin logado
       const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, senha);
       const newUser = userCredential.user;
 
-      // Salva no Firestore
       await firebase.firestore().collection('usuarios').doc(newUser.uid).set({
         email: email,
         tipo: tipo,
@@ -505,7 +489,6 @@
 
   async function excluirUsuario(uid, email) {
     if (!confirm(`Excluir o usuário ${email}?\n\n⚠️ Isso remove do Firestore, mas a conta de login continua ativa no Firebase Auth.`)) return;
-
     try {
       await firebase.firestore().collection('usuarios').doc(uid).delete();
       carregarUsuarios();
@@ -521,14 +504,30 @@
   };
 </script>
 
-<!-- 🌟 EASTER EGGS 🌟 -->
+<!-- OneSignal init -->
+<script>
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function(OneSignal) {
+    await OneSignal.init({
+      appId: "57614746-34e9-4f8f-903b-dad6b1fe1bfe",
+      serviceWorkerParam: { scope: "/inventario-rp-fluxo-ghosts/" },
+      serviceWorkerPath: "/inventario-rp-fluxo-ghosts/OneSignalSDKWorker.js",
+    });
+    window.OneSignal = OneSignal;
+    console.log('OneSignal inicializado');
+  });
+</script>
+
+<!-- script.js por último -->
+<script src="script.js"></script>
+
+<!-- Easter eggs -->
 <script>
   console.log('%c🎮 Inventário RP — Fluxo GHOSTS', 'color: #7c4dff; font-size: 20px; font-weight: bold; text-shadow: 0 0 10px #7c4dff;');
   console.log('%c👋 Eaí, curioso! Bem-vindo ao console.', 'color: #00c853; font-size: 14px;');
 
   let cliques = 0;
   const titulo = document.getElementById('tituloEaster');
-
   if (titulo) {
     titulo.addEventListener('click', () => {
       cliques++;
