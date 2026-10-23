@@ -161,7 +161,6 @@ function iniciarSyncFirestore() {
       clientesDisponiveis = s.docs.map(d => ({ uid: d.id, ...d.data() })).filter(u => u.tipo === 'cliente');
       render();
     });
-    // Para o admin saber quem está online para menções, precisamos ler todos os usuários também
     unsubs.usuariosChat = FS().collection('usuarios').onSnapshot(s => {
       window.todosUsuarios = s.docs.map(d => ({ uid: d.id, ...d.data() }));
       renderChat();
@@ -215,7 +214,7 @@ function montarAbas() {
 
   const bm = document.createElement('button'); bm.textContent = '🗺️ Mapa'; bm.onclick = abrirMapa; abasEl.appendChild(bm);
 
-  // CHAT SAIU DAQUI e virou sidebar (botão para abrir/fechar)
+  // CHAT SIDEBAR (o botão agora chama toggleChatSidebar, corrigindo o erro de null)
   const bc = document.createElement('button');
   bc.textContent = '💬 Chat'; bc.style.position = 'relative';
   bc.onclick = toggleChatSidebar;
