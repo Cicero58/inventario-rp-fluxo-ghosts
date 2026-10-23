@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Inventário RP</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="style.css?v=3" />
+<link rel="stylesheet" href="style.css?v=4" />
 </head>
 <body>
 
@@ -32,7 +32,7 @@
   </div>
 </div>
 
-<!-- APP (só aparece depois de logar) -->
+<!-- APP -->
 <div id="appPrincipal" class="escondido">
 
   <header>
@@ -45,6 +45,21 @@
 
   <nav id="abas"></nav>
   <main id="conteudo"></main>
+
+  <!-- CHAT GLOBAL -->
+  <div id="chatContainer" class="chat-container escondido">
+    <div class="chat-header">
+      <h2>💬 Chat Global</h2>
+      <button id="btnFecharChat" class="sec">✕ Fechar</button>
+    </div>
+    <div id="chatMensagens" class="chat-mensagens">
+      <div class="chat-vazio">Nenhuma mensagem ainda. Seja o primeiro! 👋</div>
+    </div>
+    <div class="chat-input-area">
+      <textarea id="chatInput" placeholder="Digite uma mensagem... (Enter envia, Shift+Enter quebra linha)" rows="1"></textarea>
+      <button id="chatEnviar" title="Enviar">📤</button>
+    </div>
+  </div>
 
   <!-- MODAL ITEM -->
   <div id="modal" class="modal escondido">
@@ -224,7 +239,7 @@
     </div>
   </div>
 
-  <!-- MODAL CONFIRMAR IMPORTAÇÃO (mantido mas sem uso obrigatório) -->
+  <!-- MODAL CONFIRMAR IMPORTAÇÃO -->
   <div id="modalImportar" class="modal escondido">
     <div class="modal-conteudo">
       <h2>📥 Importar backup</h2>
@@ -277,19 +292,14 @@
 </div><!-- FECHA appPrincipal -->
 
 <!-- ===== SCRIPTS ===== -->
-
-<!-- Leaflet -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-<!-- Firebase SDK (versão compat) — ANTES do script.js -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-<!-- OneSignal SDK (defer pra não bloquear) -->
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 
-<!-- Config do Firebase + auth -->
 <script>
   const firebaseConfig = {
     apiKey: "AIzaSyCo53Ur5V7YJd771P8tdlrqlTROPNe2lME",
@@ -304,7 +314,6 @@
   window.db = firebase.firestore();
   console.log('🔥 Firebase inicializado com sucesso!');
 
-  // ===== LOGIN =====
   window.tipoUsuario = null;
 
   document.getElementById('btnEntrar').onclick = async () => {
@@ -321,8 +330,7 @@
 
     try {
       const userCredential = await firebase.auth().signInWithEmailAndPassword(email, senha);
-      const user = userCredential.user;
-      console.log('✅ Logado como:', user.email);
+      console.log('✅ Logado como:', userCredential.user.email);
     } catch (err) {
       let msg = '❌ Erro ao entrar';
       if (err.code === 'auth/user-not-found') msg = '❌ Email não cadastrado';
@@ -360,13 +368,11 @@
     }
   };
 
-  // Verifica se tá logado
   firebase.auth().onAuthStateChanged(async (user) => {
     if (user) {
       document.getElementById('telaLogin').classList.add('escondido');
       document.getElementById('appPrincipal').classList.add('visivel');
 
-      // Busca o tipo no Firestore
       try {
         const doc = await firebase.firestore().collection('usuarios').doc(user.uid).get();
         if (doc.exists) {
@@ -385,7 +391,6 @@
         window.tipoUsuario = 'cliente';
       }
 
-      // OneSignal: vincula o dispositivo ao uid
       if (window.OneSignal) {
         try {
           window.OneSignal.login(user.uid);
@@ -393,19 +398,17 @@
         } catch (e) { console.log('OneSignal login falhou:', e); }
       }
 
-      // Inicia o app
       if (typeof init === 'function') init();
     } else {
-      // Não logado
       window.tipoUsuario = null;
       document.getElementById('telaLogin').classList.remove('escondido');
       document.getElementById('appPrincipal').classList.remove('visivel');
     }
   });
 
-  // Logout
   document.getElementById('btnLogout').onclick = () => {
     if (confirm('Sair da conta?')) {
+      if (typeof fecharChat === 'function') fecharChat();
       if (typeof pararSyncFirestore === 'function') pararSyncFirestore();
       window.tipoUsuario = null;
       firebase.auth().signOut();
@@ -448,7 +451,7 @@
         lista.appendChild(div);
       });
     } catch (err) {
-      lista.innerHTML = '<div style="text-align:center;padding:20px;color:var(--vermelho);">❌ Erro ao carregar: ' + err.message + '</div>';
+      lista.innerHTML = '<div style="text-align:center;padding:20px;color:var(--vermelho);">❌ Erro: ' + err.message + '</div>';
     }
   }
 
@@ -461,7 +464,6 @@
     if (senha.length < 6) { alert('❌ Senha deve ter no mínimo 6 caracteres'); return; }
 
     try {
-      // Firebase v9 compat: createUserWithEmailAndPassword mantém o admin logado
       const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, senha);
       const newUser = userCredential.user;
 
@@ -471,8 +473,7 @@
         criadoEm: firebase.firestore.FieldValue.serverTimestamp()
       });
 
-      alert('✅ Conta criada com sucesso!\n\nEmail: ' + email + '\nTipo: ' + tipo);
-
+      alert('✅ Conta criada!\n\nEmail: ' + email + '\nTipo: ' + tipo);
       document.getElementById('adminEmail').value = '';
       document.getElementById('adminSenha').value = '';
       document.getElementById('adminTipo').value = 'cliente';
@@ -518,7 +519,6 @@
   });
 </script>
 
-<!-- script.js por último -->
 <script src="script.js"></script>
 
 <!-- Easter eggs -->

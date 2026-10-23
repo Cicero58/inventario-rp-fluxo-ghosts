@@ -86,13 +86,13 @@ const TIPOS_PADRAO = [
 
 const TEMAS = ['escuro', 'claro', 'neon'];
 
-// ===== ESTADO (agora populado pelo Firestore) =====
+// ===== ESTADO =====
 let itens = [];
 let capacidades = { casa: 150, moto: 100 };
 let veiculos = [];
 let tiposPonto = [...TIPOS_PADRAO];
 let marcadoresMapa = [];
-let clientesDisponiveis = [];   // lista de clientes pro admin escolher dono
+let clientesDisponiveis = [];
 
 let abaAtual = 'casa';
 let veiculoAberto = null;
@@ -104,11 +104,10 @@ let fotoTemp = null;
 let fotoMarcTemp = null;
 let itemBaseSelecionado = null;
 let ordenacao = 'nome';
-let clienteSelecionadoAdmin = null;  // na aba Casa do admin: qual cliente está vendo
+let clienteSelecionadoAdmin = null;
 
 let tiposVisiveis = JSON.parse(localStorage.getItem('tipos_visiveis_rp') || JSON.stringify(tiposPonto.map(t => t.id)));
 
-// Mapa (declarado aqui no topo pra evitar problema de hoisting)
 let map = null;
 let camadaMapa = null;
 let estiloAtual = 'styleAtlas';
@@ -137,48 +136,26 @@ const FS = () => firebase.firestore();
 
 async function fsAddItem(novo) {
   const data = {
-    nome: novo.nome,
-    qtd: novo.qtd,
-    categoria: novo.categoria,
-    peso: novo.peso || 0,
-    emoji: novo.emoji || '',
-    preco: novo.preco || 0,
-    foto: novo.foto || null,
-    bau: novo.bau || null,
-    veiculoId: novo.veiculoId || null,
-    donoUid: novo.donoUid || uidAtual(),
-    criadoPor: uidAtual(),
+    nome: novo.nome, qtd: novo.qtd, categoria: novo.categoria,
+    peso: novo.peso || 0, emoji: novo.emoji || '', preco: novo.preco || 0,
+    foto: novo.foto || null, bau: novo.bau || null, veiculoId: novo.veiculoId || null,
+    donoUid: novo.donoUid || uidAtual(), criadoPor: uidAtual(),
     criadoEm: firebase.firestore.FieldValue.serverTimestamp(),
   };
   await FS().collection('itens').add(data);
 }
-
-async function fsUpdateItem(id, patch) {
-  await FS().collection('itens').doc(id).update(patch);
-}
-
-async function fsDeleteItem(id) {
-  await FS().collection('itens').doc(id).delete();
-}
+async function fsUpdateItem(id, patch) { await FS().collection('itens').doc(id).update(patch); }
+async function fsDeleteItem(id) { await FS().collection('itens').doc(id).delete(); }
 
 async function fsAddVeiculo(novo) {
   await FS().collection('veiculos').add({
-    nome: novo.nome,
-    tipo: novo.tipo,
-    vaga: novo.vaga || '',
-    capacidade: novo.capacidade || 0,
-    donoUid: novo.donoUid || uidAtual(),
-    criadoPor: uidAtual(),
-    criadoEm: firebase.firestore.FieldValue.serverTimestamp(),
+    nome: novo.nome, tipo: novo.tipo, vaga: novo.vaga || '',
+    capacidade: novo.capacidade || 0, donoUid: novo.donoUid || uidAtual(),
+    criadoPor: uidAtual(), criadoEm: firebase.firestore.FieldValue.serverTimestamp(),
   });
 }
-
-async function fsUpdateVeiculo(id, patch) {
-  await FS().collection('veiculos').doc(id).update(patch);
-}
-
+async function fsUpdateVeiculo(id, patch) { await FS().collection('veiculos').doc(id).update(patch); }
 async function fsDeleteVeiculo(id) {
-  // apaga veículo + itens dele
   const snap = await FS().collection('itens').where('veiculoId', '==', id).get();
   const batch = FS().batch();
   snap.forEach(d => batch.delete(d.ref));
@@ -188,32 +165,17 @@ async function fsDeleteVeiculo(id) {
 
 async function fsAddMarcador(novo) {
   await FS().collection('marcadores').add({
-    nome: novo.nome,
-    tipoId: novo.tipoId,
-    numeroFac: novo.numeroFac || '',
-    producao: novo.producao || '',
-    numero: novo.numero || '',
-    dono: novo.dono || '',
-    descricao: novo.descricao || '',
-    foto: novo.foto || null,
-    lat: novo.lat,
-    lng: novo.lng,
-    refId: novo.refId || '',
-    bau: novo.bau || '',
-    tipo: novo.tipo || 'bau',
-    donoUid: novo.donoUid || uidAtual(),
-    criadoPor: uidAtual(),
+    nome: novo.nome, tipoId: novo.tipoId, numeroFac: novo.numeroFac || '',
+    producao: novo.producao || '', numero: novo.numero || '', dono: novo.dono || '',
+    descricao: novo.descricao || '', foto: novo.foto || null,
+    lat: novo.lat, lng: novo.lng, refId: novo.refId || '',
+    bau: novo.bau || '', tipo: novo.tipo || 'bau',
+    donoUid: novo.donoUid || uidAtual(), criadoPor: uidAtual(),
     criadoEm: firebase.firestore.FieldValue.serverTimestamp(),
   });
 }
-
-async function fsUpdateMarcador(id, patch) {
-  await FS().collection('marcadores').doc(id).update(patch);
-}
-
-async function fsDeleteMarcador(id) {
-  await FS().collection('marcadores').doc(id).delete();
-}
+async function fsUpdateMarcador(id, patch) { await FS().collection('marcadores').doc(id).update(patch); }
+async function fsDeleteMarcador(id) { await FS().collection('marcadores').doc(id).delete(); }
 
 async function fsSetConfig(docId, data) {
   await FS().collection('config').doc(docId).set(data, { merge: true });
@@ -231,7 +193,6 @@ function iniciarSyncFirestore() {
   const uid = uidAtual();
   const admin = isAdmin();
 
-  // ITENS
   let qItens = FS().collection('itens');
   if (!admin) qItens = qItens.where('donoUid', '==', uid);
   unsubscribeItens = qItens.onSnapshot(snap => {
@@ -239,7 +200,6 @@ function iniciarSyncFirestore() {
     if (typeof abaAtual !== 'undefined') render();
   }, err => console.error('Sync itens:', err));
 
-  // VEÍCULOS
   let qVeic = FS().collection('veiculos');
   if (!admin) qVeic = qVeic.where('donoUid', '==', uid);
   unsubscribeVeiculos = qVeic.onSnapshot(snap => {
@@ -247,7 +207,6 @@ function iniciarSyncFirestore() {
     if (typeof abaAtual !== 'undefined') render();
   }, err => console.error('Sync veículos:', err));
 
-  // MARCADORES
   let qMarc = FS().collection('marcadores');
   if (!admin) qMarc = qMarc.where('donoUid', '==', uid);
   unsubscribeMarcadores = qMarc.onSnapshot(snap => {
@@ -261,7 +220,6 @@ function iniciarSyncFirestore() {
     if (typeof montarAbas === 'function') montarAbas();
   }, err => console.error('Sync marcadores:', err));
 
-  // CONFIG (capacidades + tiposPonto)
   unsubscribeConfig = FS().collection('config').onSnapshot(snap => {
     snap.forEach(d => {
       if (d.id === 'capacidades') capacidades = d.data();
@@ -274,7 +232,6 @@ function iniciarSyncFirestore() {
     if (typeof abaAtual !== 'undefined') render();
   }, err => console.error('Sync config:', err));
 
-  // USUÁRIOS (só admin, pra escolher dono)
   if (admin) {
     unsubscribeUsuarios = FS().collection('usuarios').onSnapshot(snap => {
       clientesDisponiveis = snap.docs
@@ -290,7 +247,6 @@ function pararSyncFirestore() {
    unsubscribeConfig, unsubscribeUsuarios].forEach(u => u && u());
   unsubscribeItens = unsubscribeVeiculos = unsubscribeMarcadores =
     unsubscribeConfig = unsubscribeUsuarios = null;
-  // limpa estado em memória pra não vazar entre contas
   itens = []; veiculos = []; marcadoresMapa = [];
   marcadoresLeaflet = [];
   clienteSelecionadoAdmin = null;
@@ -335,6 +291,7 @@ document.getElementById('btnTema').onclick = proximoTema;
 // ===== ABAS =====
 function montarAbas() {
   abasEl.innerHTML = '';
+
   const mostrarCasa = isAdmin() || clienteJaTemCasa();
   if (mostrarCasa) {
     const btnCasa = document.createElement('button');
@@ -350,6 +307,7 @@ function montarAbas() {
     btnMoto.onclick = () => { abaAtual = 'moto'; veiculoAberto = null; montarAbas(); render(); };
     abasEl.appendChild(btnMoto);
   }
+
   const btnG = document.createElement('button');
   btnG.textContent = '🚗 Garagem';
   btnG.classList.toggle('ativo', abaAtual === 'garagem');
@@ -360,6 +318,12 @@ function montarAbas() {
   btnMapa.textContent = '🗺️ Mapa';
   btnMapa.onclick = () => abrirMapa();
   abasEl.appendChild(btnMapa);
+
+  // 💬 Chat (todo mundo vê)
+  const btnChat = document.createElement('button');
+  btnChat.textContent = '💬 Chat';
+  btnChat.onclick = () => abrirChat();
+  abasEl.appendChild(btnChat);
 
   const btnConfig = document.createElement('button');
   btnConfig.textContent = '⚙️ Configurações';
@@ -437,15 +401,12 @@ function criarBarraOrdenacao() {
   return div;
 }
 
-// ===== ABA CASA DO ADMIN (com seletor de cliente) =====
+// ===== ABA CASA DO ADMIN =====
 function renderCasaAdmin() {
-  // Seletor de cliente
   const selDiv = document.createElement('div');
   selDiv.className = 'capacidade';
   selDiv.innerHTML = `
-    <div class="capacidade-topo">
-      <strong>👤 Cliente</strong>
-    </div>
+    <div class="capacidade-topo"><strong>👤 Cliente</strong></div>
     <select id="selClienteAdmin" style="width:100%;padding:10px;background:var(--bg-3);border:1px solid var(--borda);border-radius:8px;color:var(--texto);margin-top:6px;">
       <option value="">— Selecione um cliente —</option>
       ${clientesDisponiveis.map(c => `<option value="${c.uid}" ${clienteSelecionadoAdmin === c.uid ? 'selected' : ''}>${c.email || c.uid}</option>`).join('')}
@@ -560,7 +521,7 @@ function renderCasaCliente() {
   else arr.forEach(i => lista.appendChild(criarCardItem(i)));
 }
 
-// ===== ABA MOTO (admin) =====
+// ===== ABA MOTO / BAU FIXO =====
 function renderBauFixo(bauId) {
   if (bauId === 'casa' && isAdmin()) { renderCasaAdmin(); return; }
   const bau = BAUS_FIXOS.find(b => b.id === bauId);
@@ -780,7 +741,6 @@ function abrirModal(item=null) {
   document.getElementById('telaForm').style.display = item ? 'block' : 'none';
   document.getElementById('btnVoltar').style.display = item ? 'none' : 'block';
 
-  // seletor de dono (só admin, só se não for edição e se tem cliente)
   let selDono = document.getElementById('selDonoItem');
   if (isAdmin() && !item && clientesDisponiveis.length) {
     if (!selDono) {
@@ -1140,7 +1100,7 @@ function downloadFallback(json, nomeArquivo) {
   alert('✅ Backup gerado!');
 }
 
-// ===== MIGRAR localStorage → Firestore (uma vez) =====
+// ===== MIGRAR localStorage → Firestore =====
 async function migrarLocalParaFirestore() {
   if (!confirm('Isso vai enviar os dados locais deste dispositivo pro Firestore. Continuar?')) return;
   const localItens = JSON.parse(localStorage.getItem('itens_rp_v2') || '[]');
@@ -1392,7 +1352,6 @@ function abrirModalMarcador(mEditar = null) {
   }
   if (mEditar && mEditar.refId) { sR.value = mEditar.tipo === 'veiculo' ? `${mEditar.refId}|veiculo` : `${mEditar.refId}|bau`; }
 
-  // seletor de dono (admin)
   let selDono = document.getElementById('selDonoMarc');
   if (isAdmin() && !mEditar && clientesDisponiveis.length) {
     if (!selDono) {
@@ -1504,6 +1463,228 @@ document.getElementById('btnSalvarTipo').onclick = async () => {
   renderListaTipos();
 };
 
+// ===== CHAT GLOBAL =====
+let unsubscribeChat = null;
+let chatAberto = false;
+let chatMsgs = [];
+let ultimoEnvioEm = 0;
+let editandoMsgId = null;
+const RATE_LIMIT_MS = 3000;
+
+function abrirChat() {
+  chatAberto = true;
+  document.getElementById('chatContainer').classList.remove('escondido');
+  document.getElementById('chatMensagens').innerHTML = '';
+  iniciarChatListener();
+  setTimeout(() => {
+    document.getElementById('chatInput').focus();
+    scrollChatParaFinal();
+  }, 100);
+}
+
+function fecharChat() {
+  chatAberto = false;
+  document.getElementById('chatContainer').classList.add('escondido');
+  if (unsubscribeChat) { unsubscribeChat(); unsubscribeChat = null; }
+}
+window.fecharChat = fecharChat;
+
+function iniciarChatListener() {
+  if (unsubscribeChat) unsubscribeChat();
+  unsubscribeChat = FS().collection('chat_global')
+    .orderBy('criadoEm', 'desc')
+    .limit(100)
+    .onSnapshot(snap => {
+      chatMsgs = snap.docs.map(d => ({ id: d.id, ...d.data() })).reverse();
+      renderChat();
+    }, err => {
+      console.error('Erro chat:', err);
+      document.getElementById('chatMensagens').innerHTML =
+        '<div class="chat-vazio">❌ Erro ao carregar: ' + err.message + '</div>';
+    });
+}
+
+function renderChat() {
+  const box = document.getElementById('chatMensagens');
+  if (!box) return;
+  const estavaNoFinal = box.scrollHeight - box.scrollTop - box.clientHeight < 100;
+
+  if (!chatMsgs.length) {
+    box.innerHTML = '<div class="chat-vazio">Nenhuma mensagem ainda. Seja o primeiro! 👋</div>';
+    return;
+  }
+
+  box.innerHTML = '';
+  const uid = uidAtual();
+  const admin = isAdmin();
+
+  chatMsgs.forEach(m => {
+    const minha = m.autorUid === uid;
+    const podeEditar = minha && editandoMsgId !== m.id;
+    const podeApagar = admin || minha;
+    const estaEditando = editandoMsgId === m.id;
+
+    const div = document.createElement('div');
+    div.className = 'chat-msg' + (minha ? ' minha' : '');
+    div.dataset.id = m.id;
+
+    const tipoBadge = m.autorTipo === 'admin' ? '👑 ' : '🧑 ';
+    const hora = m.criadoEm && m.criadoEm.toDate ? m.criadoEm.toDate() : null;
+    const horaStr = hora ? hora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '';
+    const editadaTag = m.editadaEm ? '<span class="chat-msg-editada">(editada)</span>' : '';
+
+    let textoHtml;
+    if (estaEditando) {
+      textoHtml = `<div class="chat-msg-texto editando">
+        <textarea id="edit_${m.id}" style="width:100%;background:rgba(0,0,0,0.2);border:none;color:inherit;font-family:inherit;resize:vertical;min-height:40px;padding:6px;border-radius:6px;">${escapeHtml(m.texto)}</textarea>
+      </div>`;
+    } else {
+      textoHtml = `<div class="chat-msg-texto">${escapeHtml(m.texto)}</div>`;
+    }
+
+    let acoesHtml = '';
+    if (estaEditando) {
+      acoesHtml = `<div class="chat-msg-acoes" style="opacity:1;">
+        <button data-acao="salvar-edit" title="Salvar">✅</button>
+        <button data-acao="cancelar-edit" title="Cancelar">❌</button>
+      </div>`;
+    } else if (podeEditar || podeApagar) {
+      acoesHtml = '<div class="chat-msg-acoes">';
+      if (podeEditar) acoesHtml += '<button data-acao="editar" title="Editar">✏️</button>';
+      if (podeApagar) acoesHtml += '<button data-acao="apagar" title="Apagar">🗑️</button>';
+      acoesHtml += '</div>';
+    }
+
+    div.innerHTML = `
+      <div class="chat-msg-autor">${tipoBadge}${escapeHtml(m.autorEmail || 'Anônimo')}</div>
+      ${textoHtml}
+      <div class="chat-msg-rodape">
+        <span class="chat-msg-hora">${horaStr}${editadaTag}</span>
+        ${acoesHtml}
+      </div>
+    `;
+
+    if (estaEditando) {
+      div.querySelector('[data-acao="salvar-edit"]').onclick = () => salvarEdicaoMsg(m.id);
+      div.querySelector('[data-acao="cancelar-edit"]').onclick = () => { editandoMsgId = null; renderChat(); };
+      const ta = div.querySelector(`#edit_${m.id}`);
+      if (ta) {
+        ta.focus();
+        ta.setSelectionRange(ta.value.length, ta.value.length);
+        ta.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); salvarEdicaoMsg(m.id); }
+          if (e.key === 'Escape') { editandoMsgId = null; renderChat(); }
+        });
+      }
+    } else {
+      const bEdit = div.querySelector('[data-acao="editar"]');
+      const bApag = div.querySelector('[data-acao="apagar"]');
+      if (bEdit) bEdit.onclick = () => { editandoMsgId = m.id; renderChat(); };
+      if (bApag) bApag.onclick = () => apagarMsg(m.id);
+    }
+
+    box.appendChild(div);
+  });
+
+  if (estavaNoFinal) scrollChatParaFinal();
+}
+
+function scrollChatParaFinal() {
+  const box = document.getElementById('chatMensagens');
+  if (box) box.scrollTop = box.scrollHeight;
+}
+
+function escapeHtml(s) {
+  return String(s || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+async function enviarMsg() {
+  const input = document.getElementById('chatInput');
+  const texto = input.value.trim();
+  if (!texto) return;
+
+  const agora = Date.now();
+  if (agora - ultimoEnvioEm < RATE_LIMIT_MS) {
+    const faltam = Math.ceil((RATE_LIMIT_MS - (agora - ultimoEnvioEm)) / 1000);
+    alert(`⏱️ Calma! Espere ${faltam}s antes de enviar outra.`);
+    return;
+  }
+  if (texto.length > 2000) { alert('❌ Mensagem muito longa (máx 2000).'); return; }
+
+  const btn = document.getElementById('chatEnviar');
+  btn.disabled = true;
+  try {
+    const user = firebase.auth().currentUser;
+    await FS().collection('chat_global').add({
+      texto,
+      autorUid: user.uid,
+      autorEmail: user.email || 'Anônimo',
+      autorTipo: window.tipoUsuario || 'cliente',
+      criadoEm: firebase.firestore.FieldValue.serverTimestamp(),
+      editadaEm: null,
+    });
+    ultimoEnvioEm = Date.now();
+    input.value = '';
+    input.style.height = 'auto';
+    scrollChatParaFinal();
+  } catch (err) {
+    console.error(err);
+    alert('❌ Erro ao enviar: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    input.focus();
+  }
+}
+
+async function salvarEdicaoMsg(id) {
+  const ta = document.getElementById(`edit_${id}`);
+  if (!ta) return;
+  const novoTexto = ta.value.trim();
+  if (!novoTexto) { alert('❌ Mensagem vazia.'); return; }
+  if (novoTexto.length > 2000) { alert('❌ Muito longa.'); return; }
+  try {
+    await FS().collection('chat_global').doc(id).update({
+      texto: novoTexto,
+      editadaEm: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    editandoMsgId = null;
+    renderChat();
+  } catch (err) {
+    console.error(err);
+    alert('❌ Erro ao editar: ' + err.message);
+  }
+}
+
+async function apagarMsg(id) {
+  if (!confirm('Apagar esta mensagem?')) return;
+  try {
+    await FS().collection('chat_global').doc(id).delete();
+  } catch (err) {
+    console.error(err);
+    alert('❌ Erro ao apagar: ' + err.message);
+  }
+}
+
+document.getElementById('btnFecharChat').onclick = fecharChat;
+document.getElementById('chatEnviar').onclick = enviarMsg;
+
+const chatInputEl = document.getElementById('chatInput');
+chatInputEl.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    enviarMsg();
+  }
+});
+chatInputEl.addEventListener('input', () => {
+  chatInputEl.style.height = 'auto';
+  chatInputEl.style.height = Math.min(chatInputEl.scrollHeight, 120) + 'px';
+});
+
 // ===== EVENTOS GERAIS =====
 document.getElementById('btnCancelar').onclick = fecharModal;
 document.getElementById('btnVoltar').onclick = voltarEscolha;
@@ -1564,4 +1745,9 @@ function renderSecaoSom() {
   document.getElementById('btnMutarTudo').onclick = () => { if (somLigado && musicaFundo.volume > 0 && !musicaFundo.paused) { somLigado = false; localStorage.setItem('som_ligado', 'off'); musicaFundo.pause(); musicaIniciada = false; } else { somLigado = true; localStorage.setItem('som_ligado', 'on'); if (volumeMusica <= 0) sVM(25); else iniciarMusica(); } atualizarBotaoSom(); aBM(); };
 }
 
-document.addEventListener('DOMContentLoaded', () => { const a = document.getElementById('appPrincipal'); const l = document.getElementById('telaLogin'); if (a) a.classList.add('escondido'); if (l) l.classList.remove('escondido'); });
+document.addEventListener('DOMContentLoaded', () => {
+  const a = document.getElementById('appPrincipal');
+  const l = document.getElementById('telaLogin');
+  if (a) a.classList.add('escondido');
+  if (l) l.classList.remove('escondido');
+});
