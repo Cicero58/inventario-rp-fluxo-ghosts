@@ -829,7 +829,7 @@ document.getElementById('btnSalvarTipo').onclick = async () => {
 
 // ===== CHAT GLOBAL - SIDEBAR =====
 let unsubChat = null, chatMsgs = [], ultimoEnvioEm = 0, editandoMsgId = null, msgRespondendo = null;
-let chatTamanho = 30, unsubLido = null;
+let chatTamanho = 30, unsubLido = null, ultimaMsgLidaId = null;
 const RATE_LIMIT_MS = 3000;
 
 function toggleChatSidebar() {
@@ -856,10 +856,12 @@ function iniciarChatListener() {
 }
 
 function marcarChatComoLido() {
-  if (unsubLido) unsubLido();
   if (!chatMsgs.length) return;
   const ult = chatMsgs[chatMsgs.length - 1];
+  if (ult.id === ultimaMsgLidaId) return; // Evita loop infinito de updates e "pisca-pisca"
+  
   if (ult.autorUid !== uidAtual()) {
+    ultimaMsgLidaId = ult.id;
     FS().collection('usuarios').doc(uidAtual()).update({ ultimaLeituraChat: firebase.firestore.FieldValue.serverTimestamp() }).catch(()=>{});
   }
   atualizarBadgeChat();
@@ -1024,7 +1026,8 @@ async function enviarMsg() {
     await FS().collection('chat_global').add(msgData);
     ultimoEnvioEm = Date.now();
     input.value = ''; input.style.height = 'auto';
-    cancelarResposta(); fecharEmojiPicker();
+    cancelarResposta(); 
+    document.getElementById('emojiPicker').classList.add('escondido'); // CORREÇÃO DO ERRO AQUI
     rolarChatFinal();
   } catch (err) { alert('❌ Erro: ' + err.message); }
   finally { btn.disabled = false; input.focus(); }
