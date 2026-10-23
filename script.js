@@ -162,7 +162,6 @@ document.getElementById('btnTema').onclick = proximoTema;
 function montarAbas() {
   abasEl.innerHTML = '';
   
-  // Casa e Moto só pra admin (cliente vê só a casa dele no mapa)
   if (isAdmin()) {
     BAUS_FIXOS.forEach(b => {
       const btn = document.createElement('button');
@@ -171,15 +170,6 @@ function montarAbas() {
       btn.onclick = () => { abaAtual = b.id; veiculoAberto = null; montarAbas(); render(); };
       abasEl.appendChild(btn);
     });
-  // Aba Admin (só pra admins)
-  if (window.tipoUsuario === 'admin') {
-    const btnAdmin = document.createElement('button');
-    btnAdmin.textContent = '👑 Admin';
-    btnAdmin.style.background = '#ffaa00';
-    btnAdmin.style.color = '#000';
-    btnAdmin.onclick = () => abrirPainelAdmin();
-    abasEl.appendChild(btnAdmin);
-  }
   }
 
   const btnG = document.createElement('button');
@@ -198,6 +188,16 @@ function montarAbas() {
   btnConfig.classList.toggle('ativo', abaAtual === 'config');
   btnConfig.onclick = () => { abaAtual = 'config'; veiculoAberto = null; montarAbas(); render(); };
   abasEl.appendChild(btnConfig);
+
+  // Aba Admin (só pra admins)
+  if (isAdmin()) {
+    const btnAdmin = document.createElement('button');
+    btnAdmin.textContent = '👑 Admin';
+    btnAdmin.style.background = '#ffaa00';
+    btnAdmin.style.color = '#000';
+    btnAdmin.onclick = () => abrirPainelAdmin();
+    abasEl.appendChild(btnAdmin);
+  }
 }
 
 function montarCategorias() {
@@ -222,7 +222,6 @@ function render() {
   } else if (isAdmin()) {
     renderBauFixo(abaAtual);
   } else {
-    // Cliente sem casa fixa: mostra garagem
     abaAtual = 'garagem';
     renderGaragem();
   }
@@ -326,7 +325,6 @@ function renderGaragem() {
   const lista = document.createElement('main');
   conteudoEl.appendChild(lista);
 
-  // Cliente só vê veículos dele
   let veiculosVisiveis = veiculos;
   if (isCliente()) {
     const uid = uidAtual();
@@ -373,7 +371,6 @@ function renderBauVeiculo() {
   const v = veiculos.find(x => x.id === veiculoAberto);
   if (!v) { veiculoAberto = null; render(); return; }
 
-  // Cliente só acessa veículo dele
   if (isCliente() && v.criadoPor !== uidAtual()) {
     alert('❌ Você não tem acesso a este veículo.');
     veiculoAberto = null;
@@ -448,8 +445,8 @@ function criarCardItem(item) {
     ? `<div style="font-size:0.75rem; color:#00c853; margin-top:2px;">💰 R$ ${precoUnitario.toFixed(2)}/un • Total: R$ ${valorTotal}</div>` 
     : '';
 
-  // Cliente só pode excluir os itens que ele criou (veículo dele ou itens adicionados por ele)
-  const podeExcluir = isAdmin() || (isCliente() && veiculoAberto); 
+  // Cliente só pode excluir os itens do veículo dele (ou que ele criou)
+  const podeExcluir = isAdmin() || (isCliente() && veiculoAberto);
   const podeEditar = isAdmin() || (isCliente() && veiculoAberto);
 
   card.innerHTML = `
@@ -476,13 +473,12 @@ function abrirModal(item=null) {
   fotoTemp = item ? item.foto : null;
   itemBaseSelecionado = null;
 
-  // 👇 BLOCO NOVO: LIBERA CAMPOS PRA ADMIN, BLOQUEIA PRA CLIENTE 👇
+  // Travar campos pra cliente
   const camposBloqueados = ['itemNome', 'itemCategoria', 'itemPeso', 'itemPreco', 'itemEmoji', 'itemFoto'];
   camposBloqueados.forEach(id => {
     const el = document.getElementById(id);
     if (el) el.disabled = !isAdmin();
   });
-  // 👆 FIM DO BLOCO NOVO 👆
 
   document.getElementById('modalTitulo').textContent = item ? 'Editar item' : 'Novo item';
   document.getElementById('telaEscolha').style.display = item ? 'none' : 'block';
@@ -574,11 +570,8 @@ function salvar() {
   const qtd = parseInt(document.getElementById('itemQtd').value) || 1;
 
   if (editandoId) {
-    // SE ESTIVER EDITANDO, TEM QUE RESPEITAR A REGRA
     const it = itens.find(i => i.id === editandoId);
-    
     if (isAdmin()) {
-      // Admin pode mudar tudo
       const nome = document.getElementById('itemNome').value.trim();
       const cat = document.getElementById('itemCategoria').value;
       const peso = parseFloat(document.getElementById('itemPeso').value) || 0;
@@ -587,19 +580,15 @@ function salvar() {
       if (!nome) { alert('Digite o nome do item!'); return; }
       Object.assign(it, { nome, qtd, categoria:cat, peso, emoji, preco, foto:fotoTemp });
     } else {
-      // Cliente SÓ PODE MUDAR A QUANTIDADE
       it.qtd = qtd;
     }
   } else {
-    // NOVO ITEM (só acontece pra admin, pq cliente n pode criar)
     const nome = document.getElementById('itemNome').value.trim();
     const cat = document.getElementById('itemCategoria').value;
     const peso = parseFloat(document.getElementById('itemPeso').value) || 0;
     const emoji = document.getElementById('itemEmoji').value.trim();
     const preco = parseFloat(document.getElementById('itemPreco')?.value) || 0;
-    
     if (!nome) { alert('Digite o nome do item!'); return; }
-    
     const novo = {
       id: Date.now().toString(),
       nome, qtd, categoria:cat, peso, emoji, preco,
@@ -609,7 +598,6 @@ function salvar() {
     };
     itens.push(novo);
   }
-  
   salvarStorage();
   fecharModal();
   render();
@@ -647,6 +635,10 @@ function salvarVeiculo() {
 
   if (editandoVeicId) {
     const v = veiculos.find(x => x.id === editandoVeicId);
+    if (isCliente() && v.criadoPor !== uidAtual()) {
+      alert('❌ Você não tem permissão para editar este veículo.');
+      return;
+    }
     Object.assign(v, { nome, tipo, vaga, capacidade:cap });
   } else {
     veiculos.push({ 
@@ -1046,7 +1038,6 @@ document.getElementById('btnToggleCor').onclick = () => {
 };
 
 function abrirMapa() {
-  // Esconder botões admin pra cliente
   const btnTipos = document.getElementById('btnGerenciarTipos');
   const btnToggleCor = document.getElementById('btnToggleCor');
   const btnEstilo = document.getElementById('btnTrocarEstilo');
@@ -1098,7 +1089,6 @@ function abrirMapa() {
 }
 
 function desenharMarcador(m) {
-  // Cliente só vê marcadores globais (admin) ou os dele
   if (isCliente()) {
     const uid = uidAtual();
     const ehGlobal = m.criadoPorTipo === 'admin';
@@ -1228,7 +1218,6 @@ buscaMapaEl.oninput = () => {
   if (!termo) { buscaResultadosEl.classList.add('escondido'); return; }
 
   let resultados = marcadoresMapa.filter(m => {
-    // Cliente só busca nos que pode ver
     if (isCliente()) {
       const uid = uidAtual();
       const ehGlobal = m.criadoPorTipo === 'admin';
@@ -1314,8 +1303,6 @@ function abrirModalMarcador(marcadorEditar = null) {
   selTipo.innerHTML = '';
 
   if (isCliente()) {
-    // Cliente só pode criar tipo "casa"
-    const tipoCasa = tiposPonto.find(t => t.id === 'casa') || TIPOS_PADRAO.find(t => t.id === 'casa');
     selTipo.innerHTML = `<option value="casa">🏠 Casa</option>`;
     if (marcadorEditar) selTipo.value = marcadorEditar.tipoId;
   } else {
