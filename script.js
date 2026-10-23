@@ -163,7 +163,6 @@ function iniciarSyncFirestore() {
     });
     unsubs.usuariosChat = FS().collection('usuarios').onSnapshot(s => {
       window.todosUsuarios = s.docs.map(d => ({ uid: d.id, ...d.data() }));
-      renderChat();
     });
   } else {
     window.todosUsuarios = [{ uid: uid, email: firebase.auth().currentUser.email, tipo: window.tipoUsuario }];
@@ -214,7 +213,7 @@ function montarAbas() {
 
   const bm = document.createElement('button'); bm.textContent = '🗺️ Mapa'; bm.onclick = abrirMapa; abasEl.appendChild(bm);
 
-  // CHAT SIDEBAR (o botão agora chama toggleChatSidebar, corrigindo o erro de null)
+  // CHAT SIDEBAR
   const bc = document.createElement('button');
   bc.textContent = '💬 Chat'; bc.style.position = 'relative';
   bc.onclick = toggleChatSidebar;
@@ -829,7 +828,8 @@ document.getElementById('btnSalvarTipo').onclick = async () => {
 
 // ===== CHAT GLOBAL - SIDEBAR =====
 let unsubChat = null, chatMsgs = [], ultimoEnvioEm = 0, editandoMsgId = null, msgRespondendo = null;
-let chatTamanho = 30, unsubLido = null, ultimaMsgLidaId = null;
+let chatTamanho = 30;
+let ultimoRenderHashChat = ''; // Trava de renderização
 const RATE_LIMIT_MS = 3000;
 
 function toggleChatSidebar() {
@@ -838,10 +838,9 @@ function toggleChatSidebar() {
   if (!sb.classList.contains('escondido')) {
     iniciarChatListener();
     setTimeout(() => { document.getElementById('chatInput').focus(); rolarChatFinal(); }, 100);
-    marcarChatComoLido();
+    atualizarBadgeChat(); // Atualiza o badge sem disparar o banco
   } else {
     if (unsubChat) { unsubChat(); unsubChat = null; }
-    if (unsubLido) { unsubLido(); unsubLido = null; }
   }
 }
 
@@ -855,22 +854,14 @@ function iniciarChatListener() {
   });
 }
 
-function marcarChatComoLido() {
-  if (!chatMsgs.length) return;
-  const ult = chatMsgs[chatMsgs.length - 1];
-  if (ult.id === ultimaMsgLidaId) return; // Evita loop infinito de updates e "pisca-pisca"
-  
-  if (ult.autorUid !== uidAtual()) {
-    ultimaMsgLidaId = ult.id;
-    FS().collection('usuarios').doc(uidAtual()).update({ ultimaLeituraChat: firebase.firestore.FieldValue.serverTimestamp() }).catch(()=>{});
-  }
-  atualizarBadgeChat();
-}
-
 function atualizarBadgeChat() {
   const badge = document.getElementById('navChatBadge');
   if (!badge) return;
-  const ultLeitura = window.ultimaLeituraChatDoc ? window.ultimaLeituraChatDoc.toDate() : new Date(0);
+  
+  // Pega a data de leitura do app inteiro (guardada no localStorage pra não pesar no Firestore)
+  const ultimaLeituraStr = localStorage.getItem('ultima_leitura_chat_' + uidAtual()) || new Date(0).toISOString();
+  const ultLeitura = new Date(ultimaLeituraStr);
+  
   const naoLidas = chatMsgs.filter(m => m.autorUid !== uidAtual() && m.criadoEm && m.criadoEm.toDate() > ultLeitura).length;
   
   if (naoLidas > 0) {
@@ -885,7 +876,18 @@ function renderChat() {
   const box = document.getElementById('chatMensagens');
   if (!box) return;
   
+  // Trava: se as mensagens forem exatamente as mesmas da última renderização, para aqui e não pisca.
+  const hashAtual = chatMsgs.map(m => m.id + (m.editadaEm ? 'e' : '')).join(',') + editandoMsgId + (msgRespondendo ? msgRespondendo.id : '');
+  if (hashAtual === ultimoRenderHashChat) return;
+  ultimoRenderHashChat = hashAtual;
+
   const estaNoFinal = box.scrollHeight - box.scrollTop - box.clientHeight < 100;
+  
+  // Marca como lido no localStorage apenas (evita o loop no Firestore)
+  if (chatMsgs.length > 0 && document.getElementById('chatSidebar').classList.contains('escondido') === false) {
+    localStorage.setItem('ultima_leitura_chat_' + uidAtual(), new Date().toISOString());
+  }
+
   if (!chatMsgs.length) { box.innerHTML = '<div class="chat-vazio">Nenhuma mensagem ainda. 👋</div>'; return; }
 
   const htmlParts = [];
@@ -902,10 +904,10 @@ function renderChat() {
     if (diaStr !== ultimoDia) {
       htmlParts.push(`<div class="chat-separador-data">${diaStr === new Date().toLocaleDateString('pt-BR') ? 'Hoje' : diaStr}</div>`);
       ultimoDia = diaStr;
-      ultimoAutor = ''; // força mostrar header
+      ultimoAutor = '';
     }
 
-    // Agrupar mensagens do mesmo autor em menos de 2 min
+    // Agrupar mensagens
     const consecutiva = (m.autorUid === ultimoAutor) && (hora.getTime() - ultimaHora < 120000);
     if (!consecutiva) ultimoAutor = m.autorUid;
     ultimaHora = hora.getTime();
@@ -924,7 +926,6 @@ function renderChat() {
       textoHtml = `<div class="chat-msg-texto editando"><textarea id="edit_${m.id}" style="width:100%;background:transparent;border:none;color:inherit;font-family:inherit;resize:none;">${escapeHtml(m.texto)}</textarea></div>`;
     } else {
       let txtFormatado = escapeHtml(m.texto);
-      // Destacar menções
       if (m.mencoes) {
         m.mencoes.forEach(email => {
           txtFormatado = txtFormatado.replace(new RegExp('@' + escapeHtml(email), 'gi'), `<span class="mention">@${escapeHtml(email)}</span>`);
@@ -965,7 +966,6 @@ function renderChat() {
 
   box.innerHTML = htmlParts.join('');
   
-  // Binds
   chatMsgs.forEach(m => {
     const div = document.querySelector(`.chat-msg[data-id="${m.id}"]`);
     if (!div) return;
@@ -986,7 +986,7 @@ function renderChat() {
   if (estaNoFinal) rolarChatFinal();
   else document.getElementById('btnNovasMsg').classList.remove('escondido');
   
-  if (document.getElementById('chatSidebar').classList.contains('escondido') === false) marcarChatComoLido();
+  if (document.getElementById('chatSidebar').classList.contains('escondido') === false) atualizarBadgeChat();
 }
 
 function rolarChatFinal() {
@@ -1012,7 +1012,6 @@ async function enviarMsg() {
   const btn = document.getElementById('chatEnviar'); btn.disabled = true;
   try {
     const user = firebase.auth().currentUser;
-    // Extrai menções
     const mencoes = [];
     const matches = texto.match(/@([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+)/g);
     if (matches) matches.forEach(m => mencoes.push(m.substring(1)));
@@ -1027,7 +1026,7 @@ async function enviarMsg() {
     ultimoEnvioEm = Date.now();
     input.value = ''; input.style.height = 'auto';
     cancelarResposta(); 
-    document.getElementById('emojiPicker').classList.add('escondido'); // CORREÇÃO DO ERRO AQUI
+    document.getElementById('emojiPicker').classList.add('escondido');
     rolarChatFinal();
   } catch (err) { alert('❌ Erro: ' + err.message); }
   finally { btn.disabled = false; input.focus(); }
