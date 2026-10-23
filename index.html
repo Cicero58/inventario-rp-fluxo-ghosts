@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Inventário RP</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="style.css?v=4" />
+<link rel="stylesheet" href="style.css?v=5" />
 </head>
 <body>
 
@@ -44,20 +44,44 @@
   </header>
 
   <nav id="abas"></nav>
-  <main id="conteudo"></main>
 
-  <!-- CHAT GLOBAL -->
-  <div id="chatContainer" class="chat-container escondido">
-    <div class="chat-header">
-      <h2>💬 Chat Global</h2>
-      <button id="btnFecharChat" class="sec">✕ Fechar</button>
-    </div>
-    <div id="chatMensagens" class="chat-mensagens">
-      <div class="chat-vazio">Nenhuma mensagem ainda. Seja o primeiro! 👋</div>
-    </div>
-    <div class="chat-input-area">
-      <textarea id="chatInput" placeholder="Digite uma mensagem... (Enter envia, Shift+Enter quebra linha)" rows="1"></textarea>
-      <button id="chatEnviar" title="Enviar">📤</button>
+  <!-- AREA PRINCIPAL (conteúdo + sidebar do chat) -->
+  <div id="areaConteudo">
+    <main id="conteudo"></main>
+
+    <!-- SIDEBAR CHAT -->
+    <div id="chatSidebar" class="escondido">
+      <div class="chat-header">
+        <h2>💬 Chat Global</h2>
+        <button id="btnFecharChat">✕</button>
+      </div>
+      
+      <div style="padding: 4px 8px; background:var(--bg-lista); text-align:center;">
+        <button id="btnCarregarMais" style="background:transparent; border:none; color:var(--azul); cursor:pointer; font-size:0.7rem; padding:4px;">Carregar mais antigas ⬆️</button>
+      </div>
+
+      <div id="chatMensagens" class="chat-mensagens">
+        <div class="chat-vazio">Nenhuma mensagem ainda.</div>
+      </div>
+
+      <button id="btnNovasMsg" class="btn-novas-msg escondido">⬇️ Novas mensagens</button>
+
+      <div id="chatReplyBar" class="chat-reply-bar escondido">
+        <span id="chatReplyTexto">Respondendo...</span>
+        <button id="btnCancelarReply">✕</button>
+      </div>
+
+      <div class="chat-input-area">
+        <div id="emojiPicker" class="emoji-picker escondido"></div>
+        <div id="mentionList" class="mention-list escondido"></div>
+        
+        <textarea id="chatInput" placeholder="Digite uma mensagem..." rows="1"></textarea>
+        
+        <div class="chat-input-acoes">
+          <button id="btnEmoji" title="Emojis">😀</button>
+          <button id="chatEnviar" class="enviar" title="Enviar (Enter)">📤</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -73,22 +97,16 @@
       <div id="telaForm" style="display:none">
         <label>Nome do item</label>
         <input type="text" id="itemNome" placeholder="Ex: Pistola" disabled />
-
         <label>Quantidade</label>
         <input type="number" id="itemQtd" min="1" value="1" />
-
         <label>Categoria</label>
         <select id="itemCategoria" disabled></select>
-
         <label>Peso por unidade (kg)</label>
         <input type="number" id="itemPeso" step="0.01" min="0" value="0" disabled />
-
         <label>Preço de Venda (R$)</label>
         <input type="number" id="itemPreco" step="0.01" min="0" value="0" disabled />
-
         <label>Emoji (opcional)</label>
         <input type="text" id="itemEmoji" placeholder="🔫" maxlength="4" disabled />
-
         <label>Foto (opcional)</label>
         <input type="file" id="itemFoto" accept="image/*" disabled />
         <div class="preview" id="preview"></div>
@@ -145,13 +163,13 @@
     <div class="modal-conteudo">
       <h2 id="modalTipoTitulo">Novo tipo de ponto</h2>
       <label>Nome do tipo</label>
-      <input type="text" id="tipoNome" placeholder="Ex: Mansão, Hospital, Loja..." />
+      <input type="text" id="tipoNome" placeholder="Ex: Mansão, Hospital..." />
       <label>Emoji / Ícone</label>
       <input type="text" id="tipoEmoji" placeholder="🏠" maxlength="4" />
       <label>Cor</label>
       <input type="color" id="tipoCor" value="#4a7dff" />
       <label>Categoria (opcional)</label>
-      <input type="text" id="tipoCategoria" placeholder="Ex: Casas, Empregos, Lojas..." />
+      <input type="text" id="tipoCategoria" placeholder="Ex: Casas, Empregos..." />
       <div class="botoes">
         <button id="btnCancelarTipo" class="secundario">Cancelar</button>
         <button id="btnSalvarTipo">Salvar</button>
@@ -176,14 +194,14 @@
         <option value="Munições">💥 Munições</option>
         <option value="Drogas">💊 Drogas</option>
         <option value="Muambas">📦 Muambas</option>
-        <option value="Lavagem">💰 Lavagem de Dinheiro</option>
+        <option value="Lavagem">💰 Lavagem</option>
       </select>
       <label>📞 Número / Telefone (opcional)</label>
       <input type="text" id="marcNumero" placeholder="Ex: 555-1234" />
       <label>👤 Dono / Responsável (opcional)</label>
       <input type="text" id="marcDono" placeholder="Ex: João Silva" />
       <label>📝 Descrição / Observação (opcional)</label>
-      <textarea id="marcDesc" placeholder="Ex: Casa grande, 2 andares..." rows="3" style="width:100%;padding:10px;background:var(--bg-3);border:1px solid var(--borda);border-radius:8px;color:var(--texto);font-family:inherit;resize:vertical;"></textarea>
+      <textarea id="marcDesc" placeholder="Ex: Casa grande..." rows="3" style="width:100%;padding:10px;background:var(--bg-3);border:1px solid var(--borda);border-radius:8px;color:var(--texto);font-family:inherit;resize:vertical;"></textarea>
       <label>🖼️ Foto do ponto (opcional)</label>
       <input type="file" id="marcFoto" accept="image/*" />
       <div class="preview" id="previewMarc"></div>
@@ -239,28 +257,6 @@
     </div>
   </div>
 
-  <!-- MODAL CONFIRMAR IMPORTAÇÃO -->
-  <div id="modalImportar" class="modal escondido">
-    <div class="modal-conteudo">
-      <h2>📥 Importar backup</h2>
-      <p style="font-size:0.9rem;color:var(--texto-sec);line-height:1.5;margin-bottom:16px;">
-        O arquivo foi lido com sucesso!<br>
-        Como você quer aplicar os dados?
-      </p>
-      <div style="background:var(--bg-3);padding:12px;border-radius:8px;font-size:0.85rem;margin-bottom:16px;">
-        <div style="margin-bottom:6px;">📦 <strong id="previewQtdItens">0</strong> itens</div>
-        <div style="margin-bottom:6px;">🚗 <strong id="previewQtdVeiculos">0</strong> veículos</div>
-        <div style="margin-bottom:6px;">📍 <strong id="previewQtdMarcadores">0</strong> marcadores</div>
-        <div>🏷️ <strong id="previewQtdTipos">0</strong> tipos de ponto</div>
-      </div>
-      <div class="botoes" style="flex-direction:column;">
-        <button id="btnImportSubstituir" style="background:var(--vermelho);color:white;">🔄 Substituir tudo</button>
-        <button id="btnImportJuntar" style="background:var(--azul);color:white;">➕ Juntar com atual</button>
-        <button id="btnImportCancelar" class="secundario">❌ Cancelar</button>
-      </div>
-    </div>
-  </div>
-
   <!-- PAINEL ADMIN -->
   <div id="modalAdmin" class="modal escondido">
     <div class="modal-conteudo">
@@ -312,7 +308,7 @@
   firebase.initializeApp(firebaseConfig);
   window.auth = firebase.auth();
   window.db = firebase.firestore();
-  console.log('🔥 Firebase inicializado com sucesso!');
+  console.log('🔥 Firebase inicializado!');
 
   window.tipoUsuario = null;
 
@@ -329,14 +325,13 @@
     }
 
     try {
-      const userCredential = await firebase.auth().signInWithEmailAndPassword(email, senha);
-      console.log('✅ Logado como:', userCredential.user.email);
+      await firebase.auth().signInWithEmailAndPassword(email, senha);
     } catch (err) {
       let msg = '❌ Erro ao entrar';
       if (err.code === 'auth/user-not-found') msg = '❌ Email não cadastrado';
       else if (err.code === 'auth/wrong-password') msg = '❌ Senha incorreta';
       else if (err.code === 'auth/invalid-email') msg = '❌ Email inválido';
-      else if (err.code === 'auth/too-many-requests') msg = '❌ Muitas tentativas. Tente mais tarde.';
+      else if (err.code === 'auth/too-many-requests') msg = '❌ Muitas tentativas.';
       else msg = '❌ ' + err.message;
       erroEl.textContent = msg;
       erroEl.classList.remove('escondido');
@@ -377,7 +372,7 @@
         const doc = await firebase.firestore().collection('usuarios').doc(user.uid).get();
         if (doc.exists) {
           window.tipoUsuario = doc.data().tipo || 'cliente';
-          console.log('👤 Tipo:', window.tipoUsuario);
+          window.ultimaLeituraChatDoc = doc.data().ultimaLeituraChat || null;
         } else {
           await firebase.firestore().collection('usuarios').doc(user.uid).set({
             email: user.email,
@@ -391,16 +386,27 @@
         window.tipoUsuario = 'cliente';
       }
 
+      // Escuta mudanças no próprio doc (pra atualizar a leitura do chat no badge)
+      if (!window.unsubUserDoc) {
+        window.unsubUserDoc = firebase.firestore().collection('usuarios').doc(user.uid).onSnapshot(d => {
+          if (d.exists) {
+            window.ultimaLeituraChatDoc = d.data().ultimaLeituraChat || null;
+            if (typeof atualizarBadgeChat === 'function') atualizarBadgeChat();
+          }
+        });
+      }
+
       if (window.OneSignal) {
         try {
           window.OneSignal.login(user.uid);
           window.OneSignal.Notifications.requestPermission();
-        } catch (e) { console.log('OneSignal login falhou:', e); }
+        } catch (e) { }
       }
 
       if (typeof init === 'function') init();
     } else {
       window.tipoUsuario = null;
+      if (window.unsubUserDoc) { window.unsubUserDoc(); window.unsubUserDoc = null; }
       document.getElementById('telaLogin').classList.remove('escondido');
       document.getElementById('appPrincipal').classList.remove('visivel');
     }
@@ -432,7 +438,7 @@
       const snap = await firebase.firestore().collection('usuarios').get();
       lista.innerHTML = '';
       if (snap.empty) {
-        lista.innerHTML = '<div style="text-align:center;padding:20px;color:var(--texto-sec);">Nenhum usuário cadastrado.</div>';
+        lista.innerHTML = '<div style="text-align:center;padding:20px;color:var(--texto-sec);">Nenhum usuário.</div>';
         return;
       }
       snap.forEach(doc => {
@@ -442,7 +448,7 @@
         div.innerHTML = `
           <div class="info">
             <strong>${u.email || '(sem email)'}</strong>
-            <span>Criado: ${u.criadoEm ? new Date(u.criadoEm.seconds * 1000).toLocaleDateString('pt-BR') : 'desconhecido'}</span>
+            <span>Criado: ${u.criadoEm ? new Date(u.criadoEm.seconds * 1000).toLocaleDateString('pt-BR') : '?'}</span>
           </div>
           <span class="tipo-badge ${u.tipo || 'cliente'}">${u.tipo === 'admin' ? '👑 Admin' : '🧑 Cliente'}</span>
           <button title="Excluir" data-id="${doc.id}">🗑️</button>
@@ -489,7 +495,7 @@
   }
 
   async function excluirUsuario(uid, email) {
-    if (!confirm(`Excluir o usuário ${email}?\n\n⚠️ Isso remove do Firestore, mas a conta de login continua ativa no Firebase Auth.`)) return;
+    if (!confirm(`Excluir o usuário ${email}?`)) return;
     try {
       await firebase.firestore().collection('usuarios').doc(uid).delete();
       carregarUsuarios();
@@ -523,9 +529,7 @@
 
 <!-- Easter eggs -->
 <script>
-  console.log('%c🎮 Inventário RP — Fluxo GHOSTS', 'color: #7c4dff; font-size: 20px; font-weight: bold; text-shadow: 0 0 10px #7c4dff;');
-  console.log('%c👋 Eaí, curioso! Bem-vindo ao console.', 'color: #00c853; font-size: 14px;');
-
+  console.log('%c🎮 Inventário RP — Fluxo GHOSTS', 'color: #7c4dff; font-size: 20px; font-weight: bold;');
   let cliques = 0;
   const titulo = document.getElementById('tituloEaster');
   if (titulo) {
