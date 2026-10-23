@@ -162,14 +162,21 @@ document.getElementById('btnTema').onclick = proximoTema;
 function montarAbas() {
   abasEl.innerHTML = '';
   
+  const mostrarCasa = isAdmin() || clienteJaTemCasa();
+  if (mostrarCasa) {
+    const btnCasa = document.createElement('button');
+    btnCasa.textContent = '🏠 Casa';
+    btnCasa.classList.toggle('ativo', abaAtual === 'casa');
+    btnCasa.onclick = () => { abaAtual = 'casa'; veiculoAberto = null; montarAbas(); render(); };
+    abasEl.appendChild(btnCasa);
+  }
+
   if (isAdmin()) {
-    BAUS_FIXOS.forEach(b => {
-      const btn = document.createElement('button');
-      btn.textContent = b.nome;
-      btn.classList.toggle('ativo', abaAtual === b.id);
-      btn.onclick = () => { abaAtual = b.id; veiculoAberto = null; montarAbas(); render(); };
-      abasEl.appendChild(btn);
-    });
+    const btnMoto = document.createElement('button');
+    btnMoto.textContent = '🏍️ Moto';
+    btnMoto.classList.toggle('ativo', abaAtual === 'moto');
+    btnMoto.onclick = () => { abaAtual = 'moto'; veiculoAberto = null; montarAbas(); render(); };
+    abasEl.appendChild(btnMoto);
   }
 
   const btnG = document.createElement('button');
@@ -189,7 +196,6 @@ function montarAbas() {
   btnConfig.onclick = () => { abaAtual = 'config'; veiculoAberto = null; montarAbas(); render(); };
   abasEl.appendChild(btnConfig);
 
-  // Aba Admin (só pra admins)
   if (isAdmin()) {
     const btnAdmin = document.createElement('button');
     btnAdmin.textContent = '👑 Admin';
@@ -214,16 +220,23 @@ function montarCategorias() {
 // ===== RENDER =====
 function render() {
   conteudoEl.innerHTML = '';
+  
+  if (isCliente() && abaAtual === 'casa' && !clienteJaTemCasa()) {
+    abaAtual = 'garagem';
+  }
+  if (isCliente() && abaAtual === 'moto') {
+    abaAtual = 'garagem';
+  }
+
   if (abaAtual === 'config') {
     renderConfiguracoes();
   } else if (abaAtual === 'garagem') {
     if (veiculoAberto) renderBauVeiculo();
     else renderGaragem();
-  } else if (isAdmin()) {
-    renderBauFixo(abaAtual);
+  } else if (abaAtual === 'casa' && isCliente()) {
+    renderCasaCliente();
   } else {
-    abaAtual = 'garagem';
-    renderGaragem();
+    renderBauFixo(abaAtual);
   }
   atualizarResumo();
 }
@@ -309,6 +322,56 @@ function renderListaItens(bauId, busca='') {
   if (!lista) return;
   const f = busca.toLowerCase();
   let arr = itens.filter(i => i.bau === bauId && i.nome.toLowerCase().includes(f));
+  arr = ordenarItens(arr);
+  lista.innerHTML = '';
+  if (!arr.length) { lista.innerHTML = '<div class="vazio">Nenhum item aqui ainda.</div>'; return; }
+  arr.forEach(i => lista.appendChild(criarCardItem(i)));
+}
+
+function renderCasaCliente() {
+  const uid = uidAtual();
+  const cap = capacidades['casa'] || 0;
+  const itensCasa = itens.filter(i => i.bau === 'casa' && i.criadoPor === uid);
+  const pesoTotal = calcularPeso(itensCasa);
+  const pct = cap > 0 ? Math.min((pesoTotal/cap)*100, 100) : 0;
+
+  const capDiv = document.createElement('div');
+  capDiv.className = 'capacidade';
+  capDiv.innerHTML = `
+    <div class="capacidade-topo">
+      <strong>🏠 Casa</strong>
+    </div>
+    <div class="capacidade-barra">
+      <div class="capacidade-preenchida ${pesoTotal > cap ? 'cheio':''}" style="width:${pct}%"></div>
+    </div>
+    <div class="capacidade-texto">${pesoTotal.toFixed(2)} / ${cap} kg • ${itensCasa.length} itens</div>
+  `;
+  conteudoEl.appendChild(capDiv);
+
+  const barra = document.createElement('div');
+  barra.className = 'barra';
+  barra.innerHTML = `
+    <input type="text" id="busca" placeholder="🔍 Buscar item..." />
+    <button id="btnNovo">➕ Novo item</button>
+  `;
+  conteudoEl.appendChild(barra);
+  barra.querySelector('#btnNovo').onclick = () => abrirModal();
+  barra.querySelector('#busca').oninput = (e) => renderListaItensCasaCliente(e.target.value);
+
+  conteudoEl.appendChild(criarBarraOrdenacao());
+
+  const lista = document.createElement('main');
+  lista.id = 'lista';
+  conteudoEl.appendChild(lista);
+  renderListaItensCasaCliente('');
+}
+
+function renderListaItensCasaCliente(busca = '') {
+  const lista = document.getElementById('lista');
+  if (!lista) return;
+  const uid = uidAtual();
+  const f = busca.toLowerCase();
+  let arr = itens.filter(i => i.bau === 'casa' && i.criadoPor === uid && i.nome.toLowerCase().includes(f));
   arr = ordenarItens(arr);
   lista.innerHTML = '';
   if (!arr.length) { lista.innerHTML = '<div class="vazio">Nenhum item aqui ainda.</div>'; return; }
@@ -445,9 +508,8 @@ function criarCardItem(item) {
     ? `<div style="font-size:0.75rem; color:#00c853; margin-top:2px;">💰 R$ ${precoUnitario.toFixed(2)}/un • Total: R$ ${valorTotal}</div>` 
     : '';
 
-  // Cliente só pode excluir os itens do veículo dele (ou que ele criou)
-  const podeExcluir = isAdmin() || (isCliente() && veiculoAberto);
-  const podeEditar = isAdmin() || (isCliente() && veiculoAberto);
+  const podeExcluir = isAdmin() || (isCliente() && (veiculoAberto || (item.bau === 'casa' && item.criadoPor === uidAtual())));
+  const podeEditar = isAdmin() || (isCliente() && (veiculoAberto || (item.bau === 'casa' && item.criadoPor === uidAtual())));
 
   card.innerHTML = `
     <div class="icone">${item.foto?`<img src="${item.foto}"/>`:(item.emoji||'📦')}</div>
@@ -466,14 +528,12 @@ function criarCardItem(item) {
   if (podeExcluir) card.querySelector('[data-acao="excluir"]').onclick = () => excluir(item.id);
   return card;
 }
-
 // ===== MODAL ITEM =====
 function abrirModal(item=null) {
   editandoId = item ? item.id : null;
   fotoTemp = item ? item.foto : null;
   itemBaseSelecionado = null;
 
-  // Travar campos pra cliente
   const camposBloqueados = ['itemNome', 'itemCategoria', 'itemPeso', 'itemPreco', 'itemEmoji', 'itemFoto'];
   camposBloqueados.forEach(id => {
     const el = document.getElementById(id);
@@ -595,6 +655,7 @@ function salvar() {
       foto: fotoTemp,
       bau: veiculoAberto ? null : abaAtual,
       veiculoId: veiculoAberto || null,
+      criadoPor: uidAtual(),
     };
     itens.push(novo);
   }
@@ -724,16 +785,13 @@ function renderConfiguracoes() {
       <p>Escolha o tema do app. Sua escolha fica salva automaticamente.</p>
       <div class="temas-selector">
         <div class="tema-opcao ${temaAtual === 'escuro' ? 'ativo' : ''}" data-tema="escuro">
-          <div class="icone">🌙</div>
-          <div class="nome">Escuro</div>
+          <div class="icone">🌙</div><div class="nome">Escuro</div>
         </div>
         <div class="tema-opcao ${temaAtual === 'claro' ? 'ativo' : ''}" data-tema="claro">
-          <div class="icone">☀️</div>
-          <div class="nome">Claro</div>
+          <div class="icone">☀️</div><div class="nome">Claro</div>
         </div>
         <div class="tema-opcao ${temaAtual === 'neon' ? 'ativo' : ''}" data-tema="neon">
-          <div class="icone">💜</div>
-          <div class="nome">Neon</div>
+          <div class="icone">💜</div><div class="nome">Neon</div>
         </div>
       </div>
     </div>
@@ -751,7 +809,7 @@ function renderConfiguracoes() {
 
     <div class="config-secao">
       <h2>📤 Exportar backup</h2>
-      <p>Baixe um arquivo com <strong>todos os seus dados</strong> (itens, veículos, marcadores, tipos). Guarde em local seguro.</p>
+      <p>Baixe um arquivo com <strong>todos os seus dados</strong>. Guarde em local seguro.</p>
       <div class="config-botoes">
         <button class="btn-exportar" id="btnExportar">📤 Exportar backup</button>
       </div>
@@ -759,7 +817,7 @@ function renderConfiguracoes() {
 
     <div class="config-secao">
       <h2>📥 Importar backup</h2>
-      <p>Restaure seus dados a partir de um arquivo <code>.json</code> exportado anteriormente.</p>
+      <p>Restaure seus dados a partir de um arquivo <code>.json</code>.</p>
       <div class="config-botoes">
         <button class="btn-importar" id="btnImportar">📥 Escolher arquivo</button>
       </div>
@@ -779,7 +837,7 @@ function renderConfiguracoes() {
     ${isAdmin() ? `
     <div class="config-secao">
       <h2>⚠️ Zona de perigo</h2>
-      <p>Apagar <strong>TODOS</strong> os dados do app. Essa ação <strong>não pode ser desfeita</strong>!</p>
+      <p>Apagar <strong>TODOS</strong> os dados do app.</p>
       <div class="config-botoes">
         <button class="btn-resetar" id="btnResetar">🗑️ Apagar tudo</button>
       </div>
@@ -789,33 +847,19 @@ function renderConfiguracoes() {
   conteudoEl.appendChild(div);
 
   div.querySelectorAll('.tema-opcao').forEach(el => {
-    el.onclick = () => {
-      const tema = el.dataset.tema;
-      aplicarTema(tema);
-      render();
-    };
+    el.onclick = () => { aplicarTema(el.dataset.tema); render(); };
   });
 
   if (isAdmin()) {
-    const btnComCor = div.querySelector('#btnComCor');
-    const btnSemCor = div.querySelector('#btnSemCor');
-    if (btnComCor) btnComCor.onclick = () => {
-      localStorage.setItem('cor_marcadores', 'com-cor');
-      render();
-      if (map) {
-        marcadoresLeaflet.forEach(x => map.removeLayer(x.marker));
-        marcadoresLeaflet = [];
-        marcadoresMapa.forEach(m => desenharMarcador(m));
-      }
+    const bCom = div.querySelector('#btnComCor');
+    const bSem = div.querySelector('#btnSemCor');
+    if (bCom) bCom.onclick = () => {
+      localStorage.setItem('cor_marcadores', 'com-cor'); render();
+      if (map) { marcadoresLeaflet.forEach(x => map.removeLayer(x.marker)); marcadoresLeaflet = []; marcadoresMapa.forEach(m => desenharMarcador(m)); }
     };
-    if (btnSemCor) btnSemCor.onclick = () => {
-      localStorage.setItem('cor_marcadores', 'sem-cor');
-      render();
-      if (map) {
-        marcadoresLeaflet.forEach(x => map.removeLayer(x.marker));
-        marcadoresLeaflet = [];
-        marcadoresMapa.forEach(m => desenharMarcador(m));
-      }
+    if (bSem) bSem.onclick = () => {
+      localStorage.setItem('cor_marcadores', 'sem-cor'); render();
+      if (map) { marcadoresLeaflet.forEach(x => map.removeLayer(x.marker)); marcadoresLeaflet = []; marcadoresMapa.forEach(m => desenharMarcador(m)); }
     };
   }
 
@@ -824,21 +868,19 @@ function renderConfiguracoes() {
   div.querySelector('#arquivoImport').onchange = importarBackup;
   
   if (isAdmin()) {
-    const btnReset = div.querySelector('#btnResetar');
-    if (btnReset) btnReset.onclick = resetarTudo;
+    const bReset = div.querySelector('#btnResetar');
+    if (bReset) bReset.onclick = resetarTudo;
   }
 }
 
 // ===== EXPORTAR / IMPORTAR =====
 async function exportarBackup() {
   const backup = {
-    versao: 1,
-    data: new Date().toISOString(),
+    versao: 1, data: new Date().toISOString(),
     itens, capacidades, veiculos, tiposPonto, marcadoresMapa, tiposVisiveis,
     tema: localStorage.getItem('tema_rp') || 'escuro',
     corMarcadores: localStorage.getItem('cor_marcadores') || 'com-cor',
   };
-
   const json = JSON.stringify(backup, null, 2);
   const nomeArquivo = `inventario-rp-backup-${new Date().toISOString().slice(0,10)}.json`;
 
@@ -846,20 +888,16 @@ async function exportarBackup() {
     if (window.Capacitor && window.Capacitor.Plugins) {
       const Plugins = window.Capacitor.Plugins;
       if (Plugins.Filesystem && Plugins.Share) {
-        const Filesystem = Plugins.Filesystem;
-        const Share = Plugins.Share;
-        const Directory = Filesystem.Directory;
-        const Encoding = Filesystem.Encoding;
-        const cacheDir = (Directory && Directory.Cache) ? Directory.Cache : 'CACHE';
-
-        await Filesystem.writeFile({ path: nomeArquivo, data: json, directory: cacheDir, encoding: Encoding ? Encoding.UTF8 : 'utf8' });
-        const uriResult = await Filesystem.getUri({ path: nomeArquivo, directory: cacheDir });
-        await Share.share({ title: 'Backup Inventário RP', text: 'Escolha onde salvar o backup', url: uriResult.uri, dialogTitle: 'Salvar backup' });
+        const Fs = Plugins.Filesystem; const Sh = Plugins.Share;
+        const Dir = Fs.Directory; const Enc = Fs.Encoding;
+        const cache = (Dir && Dir.Cache) ? Dir.Cache : 'CACHE';
+        await Fs.writeFile({ path: nomeArquivo, data: json, directory: cache, encoding: Enc ? Enc.UTF8 : 'utf8' });
+        const uri = await Fs.getUri({ path: nomeArquivo, directory: cache });
+        await Sh.share({ title: 'Backup', text: 'Salvar', url: uri.uri, dialogTitle: 'Salvar backup' });
         return;
       }
     }
-  } catch (err) { console.log('Erro no plugin nativo:', err); }
-
+  } catch (err) {}
   downloadFallback(json, nomeArquivo);
 }
 
@@ -867,11 +905,8 @@ function downloadFallback(json, nomeArquivo) {
   const blob = new Blob([json], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url;
-  a.download = nomeArquivo;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  a.href = url; a.download = nomeArquivo;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
   URL.revokeObjectURL(url);
   alert('✅ Backup gerado!');
 }
@@ -885,100 +920,65 @@ function importarBackup(e) {
   reader.onload = (ev) => {
     try {
       const dados = JSON.parse(ev.target.result);
-      if (!dados || typeof dados !== 'object') throw new Error('Formato inválido');
       backupPendente = dados;
       document.getElementById('previewQtdItens').textContent = (dados.itens || []).length;
       document.getElementById('previewQtdVeiculos').textContent = (dados.veiculos || []).length;
       document.getElementById('previewQtdMarcadores').textContent = (dados.marcadoresMapa || []).length;
       document.getElementById('previewQtdTipos').textContent = (dados.tiposPonto || []).length;
       document.getElementById('modalImportar').classList.remove('escondido');
-    } catch (err) {
-      alert('❌ Erro ao ler o arquivo!\n\nVerifique se é um backup válido.');
-    }
+    } catch (err) { alert('❌ Arquivo inválido!'); }
     e.target.value = '';
   };
   reader.readAsText(file);
 }
 
 document.getElementById('btnImportSubstituir').onclick = () => {
-  if (!backupPendente) return;
-  if (!confirm('⚠️ Isso vai APAGAR todos os dados atuais e substituir pelo backup.\n\nContinuar?')) return;
-
+  if (!backupPendente || !confirm('⚠️ APAGAR tudo e substituir?')) return;
   itens = backupPendente.itens || [];
   capacidades = backupPendente.capacidades || {casa:150, moto:100};
   veiculos = backupPendente.veiculos || [];
   tiposPonto = backupPendente.tiposPonto || TIPOS_PADRAO;
   marcadoresMapa = backupPendente.marcadoresMapa || [];
   tiposVisiveis = backupPendente.tiposVisiveis || tiposPonto.map(t => t.id);
-
   salvarStorage();
   localStorage.setItem('marcadores_mapa', JSON.stringify(marcadoresMapa));
   localStorage.setItem('tipos_visiveis_rp', JSON.stringify(tiposVisiveis));
-
-  if (backupPendente.tema) {
-    localStorage.setItem('tema_rp', backupPendente.tema);
-    aplicarTema(backupPendente.tema);
-  }
-
-  backupPendente = null;
-  document.getElementById('modalImportar').classList.add('escondido');
-
-  if (map) {
-    marcadoresLeaflet.forEach(x => map.removeLayer(x.marker));
-    marcadoresLeaflet = [];
-    marcadoresMapa.forEach(m => desenharMarcador(m));
-    atualizarLegenda();
-  }
-
-  alert('✅ Backup restaurado com sucesso!');
-  render();
+  if (backupPendente.tema) { localStorage.setItem('tema_rp', backupPendente.tema); aplicarTema(backupPendente.tema); }
+  backupPendente = null; document.getElementById('modalImportar').classList.add('escondido');
+  if (map) { marcadoresLeaflet.forEach(x => map.removeLayer(x.marker)); marcadoresLeaflet = []; marcadoresMapa.forEach(m => desenharMarcador(m)); atualizarLegenda(); }
+  alert('✅ Restaurado!'); render();
 };
 
 document.getElementById('btnImportJuntar').onclick = () => {
   if (!backupPendente) return;
-  const itensNovos = (backupPendente.itens || []).map(it => ({ ...it, id: Date.now().toString() + Math.random().toString(36).slice(2,7) }));
-  itens = itens.concat(itensNovos);
-  const veicNovos = (backupPendente.veiculos || []).map(v => ({ ...v, id: Date.now().toString() + Math.random().toString(36).slice(2,7) }));
-  veiculos = veiculos.concat(veicNovos);
-  const idsTiposAtuais = tiposPonto.map(t => t.id);
-  const tiposNovos = (backupPendente.tiposPonto || []).filter(t => !idsTiposAtuais.includes(t.id));
-  tiposPonto = tiposPonto.concat(tiposNovos);
-  const marcNovos = (backupPendente.marcadoresMapa || []).map(m => ({ ...m, id: Date.now().toString() + Math.random().toString(36).slice(2,7) }));
-  marcadoresMapa = marcadoresMapa.concat(marcNovos);
-  tiposNovos.forEach(t => { if (!tiposVisiveis.includes(t.id)) tiposVisiveis.push(t.id); });
+  const iN = (backupPendente.itens || []).map(i => ({ ...i, id: Date.now() + Math.random().toString(36).slice(2,7) }));
+  itens = itens.concat(iN);
+  const vN = (backupPendente.veiculos || []).map(v => ({ ...v, id: Date.now() + Math.random().toString(36).slice(2,7) }));
+  veiculos = veiculos.concat(vN);
+  const iT = tiposPonto.map(t => t.id);
+  const tN = (backupPendente.tiposPonto || []).filter(t => !iT.includes(t.id));
+  tiposPonto = tiposPonto.concat(tN);
+  const mN = (backupPendente.marcadoresMapa || []).map(m => ({ ...m, id: Date.now() + Math.random().toString(36).slice(2,7) }));
+  marcadoresMapa = marcadoresMapa.concat(mN);
+  tN.forEach(t => { if (!tiposVisiveis.includes(t.id)) tiposVisiveis.push(t.id); });
   salvarStorage();
   localStorage.setItem('marcadores_mapa', JSON.stringify(marcadoresMapa));
   localStorage.setItem('tipos_visiveis_rp', JSON.stringify(tiposVisiveis));
-  if (map) { marcNovos.forEach(m => desenharMarcador(m)); atualizarLegenda(); }
-  backupPendente = null;
-  document.getElementById('modalImportar').classList.add('escondido');
-  alert('✅ Dados juntados com sucesso!');
-  render();
+  if (map) { mN.forEach(m => desenharMarcador(m)); atualizarLegenda(); }
+  backupPendente = null; document.getElementById('modalImportar').classList.add('escondido');
+  alert('✅ Juntado!'); render();
 };
 
 document.getElementById('btnImportCancelar').onclick = () => {
-  backupPendente = null;
-  document.getElementById('modalImportar').classList.add('escondido');
+  backupPendente = null; document.getElementById('modalImportar').classList.add('escondido');
 };
-
 document.getElementById('modalImportar').onclick = (e) => {
-  if (e.target.id === 'modalImportar') {
-    backupPendente = null;
-    document.getElementById('modalImportar').classList.add('escondido');
-  }
+  if (e.target.id === 'modalImportar') { backupPendente = null; document.getElementById('modalImportar').classList.add('escondido'); }
 };
 
 function resetarTudo() {
-  const resp = prompt('⚠️ APAGAR TUDO!\n\nDigite "APAGAR" (em maiúsculas) pra confirmar:');
-  if (resp !== 'APAGAR') { alert('Cancelado.'); return; }
-  localStorage.removeItem('itens_rp_v2');
-  localStorage.removeItem('caps_rp_v2');
-  localStorage.removeItem('veiculos_rp_v2');
-  localStorage.removeItem('tipos_ponto_rp');
-  localStorage.removeItem('marcadores_mapa');
-  localStorage.removeItem('tipos_visiveis_rp');
-  alert('✅ Todos os dados foram apagados.\n\nA página vai recarregar.');
-  location.reload();
+  if (prompt('Digite "APAGAR" pra confirmar:') !== 'APAGAR') return;
+  localStorage.clear(); location.reload();
 }
 
 // ===== MAPA =====
@@ -991,10 +991,7 @@ let marcadorTempLatLng = null;
 let marcadoresLeaflet = [];
 
 const ESTILOS_MAPA = ['styleAtlas', 'styleGrid'];
-const CAMINHOS_MAPA = {
-  styleAtlas: 'mapStyles/styleAtlas/map.png',
-  styleGrid: 'mapStyles/styleGrid/map.png',
-};
+const CAMINHOS_MAPA = { styleAtlas: 'mapStyles/styleAtlas/map.png', styleGrid: 'mapStyles/styleGrid/map.png' };
 let MAP_BOUNDS = [[0, 0], [-2000, 2000]];
 
 document.getElementById('btnFecharMapa').onclick = () => {
@@ -1006,83 +1003,50 @@ document.getElementById('btnFecharMapa').onclick = () => {
 };
 
 document.getElementById('btnModoAdd').onclick = () => {
-  if (isCliente() && clienteJaTemCasa()) {
-    alert('❌ Você já tem uma casa cadastrada no mapa.\n\nVocê só pode cadastrar 1 casa.');
-    return;
-  }
+  if (isCliente() && clienteJaTemCasa()) { alert('❌ Você já tem uma casa cadastrada!'); return; }
   modoAdicionar = !modoAdicionar;
   document.getElementById('btnModoAdd').textContent = modoAdicionar ? '❌ Cancelar' : '📍 Marcar Local';
   document.getElementById('btnModoAdd').classList.toggle('perigo', modoAdicionar);
-  if (modoAdicionar) alert('Clique no mapa onde fica o local!');
+  if (modoAdicionar) alert('Clique no mapa!');
 };
 
 document.getElementById('btnTrocarEstilo').onclick = () => {
   const i = ESTILOS_MAPA.indexOf(estiloAtual);
   estiloAtual = ESTILOS_MAPA[(i + 1) % ESTILOS_MAPA.length];
-  if (map && camadaMapa) {
-    map.removeLayer(camadaMapa);
-    camadaMapa = L.imageOverlay(CAMINHOS_MAPA[estiloAtual], MAP_BOUNDS).addTo(map);
-  }
+  if (map && camadaMapa) { map.removeLayer(camadaMapa); camadaMapa = L.imageOverlay(CAMINHOS_MAPA[estiloAtual], MAP_BOUNDS).addTo(map); }
 };
 
 document.getElementById('btnToggleCor').onclick = () => {
-  const atual = localStorage.getItem('cor_marcadores') || 'com-cor';
-  const novo = atual === 'com-cor' ? 'sem-cor' : 'com-cor';
+  const novo = (localStorage.getItem('cor_marcadores') === 'com-cor') ? 'sem-cor' : 'com-cor';
   localStorage.setItem('cor_marcadores', novo);
-  if (map) {
-    marcadoresLeaflet.forEach(x => map.removeLayer(x.marker));
-    marcadoresLeaflet = [];
-    marcadoresMapa.forEach(m => desenharMarcador(m));
-  }
+  if (map) { marcadoresLeaflet.forEach(x => map.removeLayer(x.marker)); marcadoresLeaflet = []; marcadoresMapa.forEach(m => desenharMarcador(m)); }
   document.getElementById('btnToggleCor').textContent = novo === 'com-cor' ? '🎨 Marcadores' : '✨ Só Emoji';
 };
 
 function abrirMapa() {
   const btnTipos = document.getElementById('btnGerenciarTipos');
-  const btnToggleCor = document.getElementById('btnToggleCor');
-  const btnEstilo = document.getElementById('btnTrocarEstilo');
-
-  if (isCliente()) {
-    if (btnTipos) btnTipos.style.display = 'none';
-    if (btnToggleCor) btnToggleCor.style.display = 'none';
-    if (btnEstilo) btnEstilo.style.display = 'none';
-  } else {
-    if (btnTipos) btnTipos.style.display = '';
-    if (btnToggleCor) btnToggleCor.style.display = '';
-    if (btnEstilo) btnEstilo.style.display = '';
-  }
+  if (btnTipos) btnTipos.style.display = isAdmin() ? '' : 'none';
 
   document.getElementById('mapa-container').classList.add('ativo');
 
   if (!map) {
-    map = L.map('mapa', {
-      crs: L.CRS.Simple, minZoom: -2, maxZoom: 3, attributionControl: false, zoomSnap: 0.25,
-      maxBounds: MAP_BOUNDS, maxBoundsViscosity: 1.0,
-    });
+    map = L.map('mapa', { crs: L.CRS.Simple, minZoom: -2, maxZoom: 3, attributionControl: false, zoomSnap: 0.25, maxBounds: MAP_BOUNDS, maxBoundsViscosity: 1.0 });
     camadaMapa = L.imageOverlay(CAMINHOS_MAPA[estiloAtual], MAP_BOUNDS).addTo(map);
     map.fitBounds(MAP_BOUNDS);
     marcadoresMapa.forEach(m => desenharMarcador(m));
-    map.on('click', (e) => {
-      if (!modoAdicionar) return;
-      marcadorTempLatLng = e.latlng;
-      abrirModalMarcador();
-    });
+    map.on('click', (e) => { if (modoAdicionar) { marcadorTempLatLng = e.latlng; abrirModalMarcador(); } });
   }
 
-  const corAtual = localStorage.getItem('cor_marcadores') || 'com-cor';
-  document.getElementById('btnToggleCor').textContent = corAtual === 'com-cor' ? '🎨 Marcadores' : '✨ Só Emoji';
-
+  const cAt = localStorage.getItem('cor_marcadores') || 'com-cor';
+  document.getElementById('btnToggleCor').textContent = cAt === 'com-cor' ? '🎨 Marcadores' : '✨ Só Emoji';
   atualizarLegenda();
 
   setTimeout(() => {
     if (map) {
       map.invalidateSize();
       if (marcadoresLeaflet.length > 0) {
-        const visiveis = marcadoresLeaflet.filter(m => tiposVisiveis.includes(m.tipoId));
-        if (visiveis.length > 0) {
-          const grupo = L.featureGroup(visiveis.map(m => m.marker));
-          map.fitBounds(grupo.getBounds().pad(0.3));
-        }
+        const vis = marcadoresLeaflet.filter(m => tiposVisiveis.includes(m.tipoId));
+        if (vis.length > 0) { map.fitBounds(L.featureGroup(vis.map(m => m.marker)).getBounds().pad(0.3)); }
       }
     }
   }, 150);
@@ -1091,9 +1055,7 @@ function abrirMapa() {
 function desenharMarcador(m) {
   if (isCliente()) {
     const uid = uidAtual();
-    const ehGlobal = m.criadoPorTipo === 'admin';
-    const ehDele = m.criadoPor === uid;
-    if (!ehGlobal && !ehDele) return;
+    if (m.criadoPorTipo !== 'admin' && m.criadoPor !== uid) return;
   }
 
   const tipo = tiposPonto.find(t => t.id === m.tipoId) || tiposPonto[0];
@@ -1107,28 +1069,24 @@ function desenharMarcador(m) {
   });
 
   const marker = L.marker([m.lat, m.lng], { icon });
+  const tTxt = m.numeroFac ? `${tipo.emoji} ${tipo.nome} ${m.numeroFac}` : `${tipo.emoji} ${tipo.nome}`;
 
-  const tipoTexto = m.numeroFac ? `${tipo.emoji} ${tipo.nome} ${m.numeroFac}` : `${tipo.emoji} ${tipo.nome}`;
+  let d = '';
+  if (m.foto) d += `<img src="${m.foto}" class="popup-foto" />`;
+  if (m.producao) d += `<div class="popup-producao">🎯 Produção: ${m.producao}</div>`;
+  if (m.numero) d += `<div class="popup-linha">📞 ${m.numero}</div>`;
+  if (m.dono) d += `<div class="popup-linha">👤 ${m.dono}</div>`;
+  if (m.descricao) d += `<div class="popup-desc">📝 ${m.descricao}</div>`;
 
-  let detalhes = '';
-  if (m.foto) detalhes += `<img src="${m.foto}" class="popup-foto" />`;
-  if (m.producao) detalhes += `<div class="popup-producao">🎯 Produção: ${m.producao}</div>`;
-  if (m.numero) detalhes += `<div class="popup-linha">📞 ${m.numero}</div>`;
-  if (m.dono) detalhes += `<div class="popup-linha">👤 ${m.dono}</div>`;
-  if (m.descricao) detalhes += `<div class="popup-desc">📝 ${m.descricao}</div>`;
-
-  const uid = uidAtual();
-  const ehDele = m.criadoPor === uid;
-  const podeEditar = isAdmin() || ehDele;
+  const eD = m.criadoPor === uidAtual();
+  const pE = isAdmin() || eD;
 
   marker.bindPopup(`
     <div class="popup-ponto">
-      <strong>${m.nome}</strong>
-      <div class="tipo">${tipoTexto}</div>
-      ${detalhes}
+      <strong>${m.nome}</strong><div class="tipo">${tTxt}</div>${d}
       ${m.refId ? `<button onclick="abrirBauDoMapa('${m.refId}', '${m.bau}')">📦 Abrir Baú</button>` : ''}
-      ${podeEditar ? `<button onclick="editarMarcador('${m.id}')">✏️ Editar</button>` : ''}
-      ${podeEditar ? `<button class="perigo" onclick="removerMarcador('${m.id}')">🗑️ Excluir</button>` : ''}
+      ${pE ? `<button onclick="editarMarcador('${m.id}')">✏️ Editar</button>` : ''}
+      ${pE ? `<button class="perigo" onclick="removerMarcador('${m.id}')">🗑️ Excluir</button>` : ''}
     </div>
   `);
 
@@ -1139,10 +1097,7 @@ function desenharMarcador(m) {
 function editarMarcador(id) {
   const m = marcadoresMapa.find(x => x.id === id);
   if (!m) return;
-  if (isCliente() && m.criadoPor !== uidAtual()) {
-    alert('❌ Você só pode editar marcadores que você criou.');
-    return;
-  }
+  if (isCliente() && m.criadoPor !== uidAtual()) { alert('❌ Sem permissão.'); return; }
   if (map) map.closePopup();
   abrirModalMarcador(m);
 }
@@ -1150,38 +1105,19 @@ function editarMarcador(id) {
 function atualizarLegenda() {
   const lista = document.getElementById('legenda-lista');
   lista.innerHTML = '';
-
   const grupos = {};
-  tiposPonto.forEach(t => {
-    const cat = t.categoria || 'Outros';
-    if (!grupos[cat]) grupos[cat] = [];
-    grupos[cat].push(t);
-  });
-
+  tiposPonto.forEach(t => { const c = t.categoria || 'Outros'; if (!grupos[c]) grupos[c] = []; grupos[c].push(t); });
   Object.keys(grupos).sort().forEach(cat => {
-    const grupo = document.createElement('div');
-    grupo.className = 'cat-grupo';
-    const tit = document.createElement('div');
-    tit.className = 'cat-titulo-leg';
-    tit.textContent = cat;
-    grupo.appendChild(tit);
-
+    const g = document.createElement('div'); g.className = 'cat-grupo';
+    const ti = document.createElement('div'); ti.className = 'cat-titulo-leg'; ti.textContent = cat; g.appendChild(ti);
     grupos[cat].forEach(t => {
-      const count = marcadoresMapa.filter(m => m.tipoId === t.id).length;
-      const item = document.createElement('label');
-      item.className = 'legenda-item';
-      const marcado = tiposVisiveis.includes(t.id) ? 'checked' : '';
-      item.innerHTML = `
-        <input type="checkbox" ${marcado} data-tipo="${t.id}" />
-        <span class="emoji">${t.emoji}</span>
-        <span class="cor" style="background:${t.cor};"></span>
-        <span class="nome">${t.nome}</span>
-        <span class="count">${count}</span>
-      `;
-      item.querySelector('input').onchange = (e) => toggleTipoVisivel(t.id, e.target.checked);
-      grupo.appendChild(item);
+      const cnt = marcadoresMapa.filter(m => m.tipoId === t.id).length;
+      const it = document.createElement('label'); it.className = 'legenda-item';
+      it.innerHTML = `<input type="checkbox" ${tiposVisiveis.includes(t.id) ? 'checked' : ''} data-tipo="${t.id}" /><span class="emoji">${t.emoji}</span><span class="cor" style="background:${t.cor};"></span><span class="nome">${t.nome}</span><span class="count">${cnt}</span>`;
+      it.querySelector('input').onchange = (e) => toggleTipoVisivel(t.id, e.target.checked);
+      g.appendChild(it);
     });
-    lista.appendChild(grupo);
+    lista.appendChild(g);
   });
 }
 
@@ -1189,156 +1125,72 @@ function toggleTipoVisivel(tipoId, visivel) {
   if (visivel) { if (!tiposVisiveis.includes(tipoId)) tiposVisiveis.push(tipoId); }
   else { tiposVisiveis = tiposVisiveis.filter(id => id !== tipoId); }
   localStorage.setItem('tipos_visiveis_rp', JSON.stringify(tiposVisiveis));
-  marcadoresLeaflet.forEach(m => {
-    if (tiposVisiveis.includes(m.tipoId)) { if (!map.hasLayer(m.marker)) m.marker.addTo(map); }
-    else { if (map.hasLayer(m.marker)) map.removeLayer(m.marker); }
-  });
+  marcadoresLeaflet.forEach(m => { if (tiposVisiveis.includes(m.tipoId)) { if (!map.hasLayer(m.marker)) m.marker.addTo(map); } else { if (map.hasLayer(m.marker)) map.removeLayer(m.marker); } });
 }
 
-document.getElementById('btnMarcarTodos').onclick = () => {
-  tiposVisiveis = tiposPonto.map(t => t.id);
-  localStorage.setItem('tipos_visiveis_rp', JSON.stringify(tiposVisiveis));
-  atualizarLegenda();
-  marcadoresLeaflet.forEach(m => { if (!map.hasLayer(m.marker)) m.marker.addTo(map); });
-};
-
-document.getElementById('btnDesmarcarTodos').onclick = () => {
-  tiposVisiveis = [];
-  localStorage.setItem('tipos_visiveis_rp', JSON.stringify(tiposVisiveis));
-  atualizarLegenda();
-  marcadoresLeaflet.forEach(m => { if (map.hasLayer(m.marker)) map.removeLayer(m.marker); });
-};
+document.getElementById('btnMarcarTodos').onclick = () => { tiposVisiveis = tiposPonto.map(t => t.id); localStorage.setItem('tipos_visiveis_rp', JSON.stringify(tiposVisiveis)); atualizarLegenda(); marcadoresLeaflet.forEach(m => { if (!map.hasLayer(m.marker)) m.marker.addTo(map); }); };
+document.getElementById('btnDesmarcarTodos').onclick = () => { tiposVisiveis = []; localStorage.setItem('tipos_visiveis_rp', JSON.stringify(tiposVisiveis)); atualizarLegenda(); marcadoresLeaflet.forEach(m => { if (map.hasLayer(m.marker)) map.removeLayer(m.marker); }); };
 
 // ===== BUSCA NO MAPA =====
 const buscaMapaEl = document.getElementById('buscaMapa');
 const buscaResultadosEl = document.getElementById('buscaResultados');
 
 buscaMapaEl.oninput = () => {
-  const termo = buscaMapaEl.value.trim().toLowerCase();
-  if (!termo) { buscaResultadosEl.classList.add('escondido'); return; }
-
-  let resultados = marcadoresMapa.filter(m => {
-    if (isCliente()) {
-      const uid = uidAtual();
-      const ehGlobal = m.criadoPorTipo === 'admin';
-      const ehDele = m.criadoPor === uid;
-      if (!ehGlobal && !ehDele) return false;
-    }
-    const tipo = tiposPonto.find(t => t.id === m.tipoId);
-    const nomeTipo = tipo ? tipo.nome : '';
-    return (
-      m.nome.toLowerCase().includes(termo) ||
-      (m.dono || '').toLowerCase().includes(termo) ||
-      (m.descricao || '').toLowerCase().includes(termo) ||
-      (m.numero || '').toLowerCase().includes(termo) ||
-      (m.numeroFac || '').toLowerCase().includes(termo) ||
-      (m.producao || '').toLowerCase().includes(termo) ||
-      nomeTipo.toLowerCase().includes(termo)
-    );
+  const t = buscaMapaEl.value.trim().toLowerCase();
+  if (!t) { buscaResultadosEl.classList.add('escondido'); return; }
+  const res = marcadoresMapa.filter(m => {
+    if (isCliente()) { const u = uidAtual(); if (m.criadoPorTipo !== 'admin' && m.criadoPor !== u) return false; }
+    const tp = tiposPonto.find(x => x.id === m.tipoId); const nT = tp ? tp.nome : '';
+    return m.nome.toLowerCase().includes(t) || (m.dono || '').toLowerCase().includes(t) || (m.descricao || '').toLowerCase().includes(t) || (m.numero || '').toLowerCase().includes(t) || (m.numeroFac || '').toLowerCase().includes(t) || (m.producao || '').toLowerCase().includes(t) || nT.toLowerCase().includes(t);
   });
-
-  buscaResultadosEl.innerHTML = '';
-  buscaResultadosEl.classList.remove('escondido');
-
-  if (resultados.length === 0) {
-    buscaResultadosEl.innerHTML = '<div class="sem-resultado">Nenhum ponto encontrado 🔍</div>';
-    return;
-  }
-
-  resultados.slice(0, 20).forEach(m => {
-    const tipo = tiposPonto.find(t => t.id === m.tipoId) || { emoji:'📍', nome:'', cor:'#4a7dff' };
-    const item = document.createElement('div');
-    item.className = 'resultado-item';
-    let sub = tipo.nome;
-    if (m.numeroFac) sub += ` • Nº ${m.numeroFac}`;
-    if (m.producao) sub += ` • ${m.producao}`;
-    if (m.dono) sub += ` • ${m.dono}`;
-    item.innerHTML = `<span class="emoji">${tipo.emoji}</span><div class="info-res"><strong>${m.nome}</strong><span>${sub}</span></div>`;
-    item.onclick = () => irParaMarcador(m.id);
-    buscaResultadosEl.appendChild(item);
+  buscaResultadosEl.innerHTML = ''; buscaResultadosEl.classList.remove('escondido');
+  if (!res.length) { buscaResultadosEl.innerHTML = '<div class="sem-resultado">Nenhum ponto encontrado 🔍</div>'; return; }
+  res.slice(0, 20).forEach(m => {
+    const tp = tiposPonto.find(x => x.id === m.tipoId) || { emoji:'📍', nome:'', cor:'#4a7dff' };
+    const it = document.createElement('div'); it.className = 'resultado-item';
+    let s = tp.nome; if (m.numeroFac) s += ` • Nº ${m.numeroFac}`; if (m.producao) s += ` • ${m.producao}`; if (m.dono) s += ` • ${m.dono}`;
+    it.innerHTML = `<span class="emoji">${tp.emoji}</span><div class="info-res"><strong>${m.nome}</strong><span>${s}</span></div>`;
+    it.onclick = () => irParaMarcador(m.id); buscaResultadosEl.appendChild(it);
   });
 };
 
 function irParaMarcador(id) {
-  const m = marcadoresMapa.find(x => x.id === id);
-  if (!m || !map) return;
-  if (!tiposVisiveis.includes(m.tipoId)) {
-    tiposVisiveis.push(m.tipoId);
-    localStorage.setItem('tipos_visiveis_rp', JSON.stringify(tiposVisiveis));
-    atualizarLegenda();
-    const entry = marcadoresLeaflet.find(x => x.id === m.id);
-    if (entry && !map.hasLayer(entry.marker)) entry.marker.addTo(map);
-  }
+  const m = marcadoresMapa.find(x => x.id === id); if (!m || !map) return;
+  if (!tiposVisiveis.includes(m.tipoId)) { tiposVisiveis.push(m.tipoId); localStorage.setItem('tipos_visiveis_rp', JSON.stringify(tiposVisiveis)); atualizarLegenda(); const e = marcadoresLeaflet.find(x => x.id === m.id); if (e && !map.hasLayer(e.marker)) e.marker.addTo(map); }
   map.setView([m.lat, m.lng], 1, { animate: true });
-  setTimeout(() => {
-    const entry = marcadoresLeaflet.find(x => x.id === m.id);
-    if (entry) entry.marker.openPopup();
-  }, 400);
-  buscaResultadosEl.classList.add('escondido');
-  buscaMapaEl.value = '';
+  setTimeout(() => { const e = marcadoresLeaflet.find(x => x.id === m.id); if (e) e.marker.openPopup(); }, 400);
+  buscaResultadosEl.classList.add('escondido'); buscaMapaEl.value = '';
 }
 
-document.addEventListener('click', (e) => {
-  if (!e.target.closest('#mapa-busca')) buscaResultadosEl.classList.add('escondido');
-});
+document.addEventListener('click', (e) => { if (!e.target.closest('#mapa-busca')) buscaResultadosEl.classList.add('escondido'); });
 
 // ===== MODAL MARCADOR =====
-function abrirModalMarcador(marcadorEditar = null) {
-  editandoMarcId = marcadorEditar ? marcadorEditar.id : null;
-  fotoMarcTemp = marcadorEditar ? (marcadorEditar.foto || null) : null;
-
-  document.getElementById('modalMarcadorTitulo').textContent = marcadorEditar ? 'Editar ponto' : 'Novo ponto no mapa';
-  document.getElementById('marcNome').value = marcadorEditar ? marcadorEditar.nome : '';
-  document.getElementById('marcNumeroFac').value = marcadorEditar ? (marcadorEditar.numeroFac || '') : '';
-  document.getElementById('marcProducao').value = marcadorEditar ? (marcadorEditar.producao || '') : '';
-  document.getElementById('marcNumero').value = marcadorEditar ? (marcadorEditar.numero || '') : '';
-  document.getElementById('marcDono').value = marcadorEditar ? (marcadorEditar.dono || '') : '';
-  document.getElementById('marcDesc').value = marcadorEditar ? (marcadorEditar.descricao || '') : '';
+function abrirModalMarcador(mEditar = null) {
+  editandoMarcId = mEditar ? mEditar.id : null;
+  fotoMarcTemp = mEditar ? (mEditar.foto || null) : null;
+  document.getElementById('modalMarcadorTitulo').textContent = mEditar ? 'Editar ponto' : 'Novo ponto no mapa';
+  document.getElementById('marcNome').value = mEditar ? mEditar.nome : '';
+  document.getElementById('marcNumeroFac').value = mEditar ? (mEditar.numeroFac || '') : '';
+  document.getElementById('marcProducao').value = mEditar ? (mEditar.producao || '') : '';
+  document.getElementById('marcNumero').value = mEditar ? (mEditar.numero || '') : '';
+  document.getElementById('marcDono').value = mEditar ? (mEditar.dono || '') : '';
+  document.getElementById('marcDesc').value = mEditar ? (mEditar.descricao || '') : '';
   document.getElementById('marcFoto').value = '';
-
-  const preview = document.getElementById('previewMarc');
-  preview.innerHTML = marcadorEditar && marcadorEditar.foto ? `<img src="${marcadorEditar.foto}" style="max-width:100px;border-radius:8px;" />` : '';
-
-  const selTipo = document.getElementById('marcTipo');
-  selTipo.innerHTML = '';
-
-  if (isCliente()) {
-    selTipo.innerHTML = `<option value="casa">🏠 Casa</option>`;
-    if (marcadorEditar) selTipo.value = marcadorEditar.tipoId;
-  } else {
-    tiposPonto.forEach(t => { selTipo.innerHTML += `<option value="${t.id}">${t.emoji} ${t.nome}</option>`; });
-    if (marcadorEditar) selTipo.value = marcadorEditar.tipoId;
-  }
-
-  const selRef = document.getElementById('marcRef');
-  selRef.innerHTML = '<option value="">— Nenhum —</option>';
-  selRef.innerHTML += '<option value="casa|bau">🏠 Casa</option>';
-  selRef.innerHTML += '<option value="moto|bau">🏍️ Moto</option>';
-  veiculos.forEach(v => { selRef.innerHTML += `<option value="${v.id}|veiculo">${iconeTipo(v.tipo)} ${v.nome}</option>`; });
-  if (marcadorEditar && marcadorEditar.refId) {
-    const refStr = marcadorEditar.tipo === 'veiculo' ? `${marcadorEditar.refId}|veiculo` : `${marcadorEditar.refId}|bau`;
-    selRef.value = refStr;
-  }
-
+  const pv = document.getElementById('previewMarc'); pv.innerHTML = mEditar && mEditar.foto ? `<img src="${mEditar.foto}" style="max-width:100px;border-radius:8px;" />` : '';
+  const sT = document.getElementById('marcTipo'); sT.innerHTML = '';
+  if (isCliente()) { sT.innerHTML = `<option value="casa">🏠 Casa</option>`; if (mEditar) sT.value = mEditar.tipoId; }
+  else { tiposPonto.forEach(t => { sT.innerHTML += `<option value="${t.id}">${t.emoji} ${t.nome}</option>`; }); if (mEditar) sT.value = mEditar.tipoId; }
+  const sR = document.getElementById('marcRef'); sR.innerHTML = '<option value="">— Nenhum —</option><option value="casa|bau">🏠 Casa</option><option value="moto|bau">🏍️ Moto</option>';
+  veiculos.forEach(v => { sR.innerHTML += `<option value="${v.id}|veiculo">${iconeTipo(v.tipo)} ${v.nome}</option>`; });
+  if (mEditar && mEditar.refId) { sR.value = mEditar.tipo === 'veiculo' ? `${mEditar.refId}|veiculo` : `${mEditar.refId}|bau`; }
   document.getElementById('modalMarcador').classList.remove('escondido');
 }
 
-function fecharModalMarcador() {
-  document.getElementById('modalMarcador').classList.add('escondido');
-  marcadorTempLatLng = null;
-  editandoMarcId = null;
-  fotoMarcTemp = null;
-}
+function fecharModalMarcador() { document.getElementById('modalMarcador').classList.add('escondido'); marcadorTempLatLng = null; editandoMarcId = null; fotoMarcTemp = null; }
 
 function salvarMarcador() {
-  const nome = document.getElementById('marcNome').value.trim();
-  if (!nome) { alert('Digite o nome do local!'); return; }
-  if (isCliente() && !editandoMarcId && clienteJaTemCasa()) {
-    alert('❌ Você já tem uma casa. Só pode ter 1.');
-    fecharModalMarcador();
-    return;
-  }
-
+  const nome = document.getElementById('marcNome').value.trim(); if (!nome) { alert('Digite o nome do local!'); return; }
+  if (isCliente() && !editandoMarcId && clienteJaTemCasa()) { alert('❌ Você já tem uma casa.'); fecharModalMarcador(); return; }
   const tipoId = document.getElementById('marcTipo').value;
   const numeroFac = document.getElementById('marcNumeroFac').value.trim();
   const producao = document.getElementById('marcProducao').value;
@@ -1346,153 +1198,66 @@ function salvarMarcador() {
   const dono = document.getElementById('marcDono').value.trim();
   const descricao = document.getElementById('marcDesc').value.trim();
   const ref = document.getElementById('marcRef').value;
-  const partes = ref ? ref.split('|') : ['', 'bau'];
-  const refId = partes[0];
-  const tipoBau = partes[1] === 'veiculo' ? 'veiculo' : 'bau';
+  const p = ref ? ref.split('|') : ['', 'bau'];
+  const refId = p[0]; const tipoBau = p[1] === 'veiculo' ? 'veiculo' : 'bau';
 
   if (editandoMarcId) {
     const m = marcadoresMapa.find(x => x.id === editandoMarcId);
-    if (isCliente() && m.criadoPor !== uidAtual()) {
-      alert('❌ Você só pode editar marcadores que você criou.');
-      return;
-    }
+    if (isCliente() && m.criadoPor !== uidAtual()) { alert('❌ Sem permissão.'); return; }
     Object.assign(m, { nome, tipoId, numeroFac, producao, numero, dono, descricao, foto: fotoMarcTemp, refId, bau: refId, tipo: tipoBau });
-    const idx = marcadoresLeaflet.findIndex(x => x.id === editandoMarcId);
-    if (idx >= 0) { map.removeLayer(marcadoresLeaflet[idx].marker); marcadoresLeaflet.splice(idx, 1); }
+    const i = marcadoresLeaflet.findIndex(x => x.id === editandoMarcId); if (i >= 0) { map.removeLayer(marcadoresLeaflet[i].marker); marcadoresLeaflet.splice(i, 1); }
     desenharMarcador(m);
   } else {
     if (!marcadorTempLatLng) { fecharModalMarcador(); return; }
-    const novo = {
-      id: Date.now().toString(),
-      nome, tipoId, numeroFac, producao, numero, dono, descricao,
-      foto: fotoMarcTemp,
-      lat: marcadorTempLatLng.lat,
-      lng: marcadorTempLatLng.lng,
-      refId, bau: refId, tipo: tipoBau,
-      criadoPor: uidAtual(),
-      criadoPorTipo: window.tipoUsuario,
-    };
-    marcadoresMapa.push(novo);
-    desenharMarcador(novo);
+    const n = { id: Date.now().toString(), nome, tipoId, numeroFac, producao, numero, dono, descricao, foto: fotoMarcTemp, lat: marcadorTempLatLng.lat, lng: marcadorTempLatLng.lng, refId, bau: refId, tipo: tipoBau, criadoPor: uidAtual(), criadoPorTipo: window.tipoUsuario };
+    marcadoresMapa.push(n); desenharMarcador(n);
   }
-
   localStorage.setItem('marcadores_mapa', JSON.stringify(marcadoresMapa));
-  modoAdicionar = false;
-  document.getElementById('btnModoAdd').textContent = '📍 Marcar Local';
-  document.getElementById('btnModoAdd').classList.remove('perigo');
-  fecharModalMarcador();
-  atualizarLegenda();
+  modoAdicionar = false; document.getElementById('btnModoAdd').textContent = '📍 Marcar Local'; document.getElementById('btnModoAdd').classList.remove('perigo');
+  fecharModalMarcador(); atualizarLegenda(); montarAbas();
 }
 
 function removerMarcador(id) {
-  const m = marcadoresMapa.find(x => x.id === id);
-  if (!m) return;
-  if (isCliente() && m.criadoPor !== uidAtual()) {
-    alert('❌ Você só pode excluir marcadores que você criou.');
-    return;
-  }
+  const m = marcadoresMapa.find(x => x.id === id); if (!m) return;
+  if (isCliente() && m.criadoPor !== uidAtual()) { alert('❌ Sem permissão.'); return; }
   if (!confirm('Excluir este ponto?')) return;
   marcadoresMapa = marcadoresMapa.filter(x => x.id !== id);
   localStorage.setItem('marcadores_mapa', JSON.stringify(marcadoresMapa));
-  const idx = marcadoresLeaflet.findIndex(x => x.id === id);
-  if (idx >= 0) { map.removeLayer(marcadoresLeaflet[idx].marker); marcadoresLeaflet.splice(idx, 1); }
-  atualizarLegenda();
+  const i = marcadoresLeaflet.findIndex(x => x.id === id); if (i >= 0) { map.removeLayer(marcadoresLeaflet[i].marker); marcadoresLeaflet.splice(i, 1); }
+  atualizarLegenda(); montarAbas();
 }
 
 function abrirBauDoMapa(refId, bau) {
   document.getElementById('mapa-container').classList.remove('ativo');
-  if (bau === 'casa' || bau === 'moto') {
-    abaAtual = bau;
-    veiculoAberto = null;
-  } else {
-    abaAtual = 'garagem';
-    veiculoAberto = refId;
-  }
-  montarAbas();
-  render();
+  if (bau === 'casa' || bau === 'moto') { abaAtual = bau; veiculoAberto = null; }
+  else { abaAtual = 'garagem'; veiculoAberto = refId; }
+  montarAbas(); render();
 }
 
 // ===== GERENCIAR TIPOS (só admin) =====
-document.getElementById('btnGerenciarTipos').onclick = () => {
-  if (!isAdmin()) return;
-  renderListaTipos();
-  document.getElementById('modalGerenciarTipos').classList.remove('escondido');
-};
-
-document.getElementById('btnFecharGerenciar').onclick = () => {
-  document.getElementById('modalGerenciarTipos').classList.add('escondido');
-};
-
-document.getElementById('btnNovoTipo').onclick = () => {
-  if (!isAdmin()) return;
-  editandoTipoId = null;
-  document.getElementById('modalTipoTitulo').textContent = 'Novo tipo de ponto';
-  document.getElementById('tipoNome').value = '';
-  document.getElementById('tipoEmoji').value = '';
-  document.getElementById('tipoCor').value = '#4a7dff';
-  document.getElementById('tipoCategoria').value = '';
-  document.getElementById('modalTipo').classList.remove('escondido');
-};
+document.getElementById('btnGerenciarTipos').onclick = () => { if (!isAdmin()) return; renderListaTipos(); document.getElementById('modalGerenciarTipos').classList.remove('escondido'); };
+document.getElementById('btnFecharGerenciar').onclick = () => { document.getElementById('modalGerenciarTipos').classList.add('escondido'); };
+document.getElementById('btnNovoTipo').onclick = () => { if (!isAdmin()) return; editandoTipoId = null; document.getElementById('modalTipoTitulo').textContent = 'Novo tipo de ponto'; document.getElementById('tipoNome').value = ''; document.getElementById('tipoEmoji').value = ''; document.getElementById('tipoCor').value = '#4a7dff'; document.getElementById('tipoCategoria').value = ''; document.getElementById('modalTipo').classList.remove('escondido'); };
 
 function renderListaTipos() {
-  const lista = document.getElementById('listaTipos');
-  lista.innerHTML = '';
+  const l = document.getElementById('listaTipos'); l.innerHTML = '';
   tiposPonto.forEach(t => {
-    const item = document.createElement('div');
-    item.className = 'tipo-item';
-    item.innerHTML = `
-      <span class="emoji">${t.emoji}</span>
-      <span class="cor" style="background:${t.cor};"></span>
-      <div class="info"><strong>${t.nome}</strong><span>${t.categoria || 'Sem categoria'}</span></div>
-      <button data-acao="editar" title="Editar">✏️</button>
-      <button data-acao="excluir" title="Excluir">🗑️</button>
-    `;
-    item.querySelector('[data-acao="editar"]').onclick = () => {
-      editandoTipoId = t.id;
-      document.getElementById('modalTipoTitulo').textContent = 'Editar tipo';
-      document.getElementById('tipoNome').value = t.nome;
-      document.getElementById('tipoEmoji').value = t.emoji;
-      document.getElementById('tipoCor').value = t.cor;
-      document.getElementById('tipoCategoria').value = t.categoria || '';
-      document.getElementById('modalTipo').classList.remove('escondido');
-    };
-    item.querySelector('[data-acao="excluir"]').onclick = () => {
-      if (!confirm(`Excluir o tipo "${t.nome}"? Os pontos desse tipo também serão removidos.`)) return;
-      tiposPonto = tiposPonto.filter(x => x.id !== t.id);
-      marcadoresMapa = marcadoresMapa.filter(m => m.tipoId !== t.id);
-      tiposVisiveis = tiposVisiveis.filter(id => id !== t.id);
-      salvarStorage();
-      localStorage.setItem('marcadores_mapa', JSON.stringify(marcadoresMapa));
-      localStorage.setItem('tipos_visiveis_rp', JSON.stringify(tiposVisiveis));
-      renderListaTipos();
-      atualizarLegenda();
-    };
-    lista.appendChild(item);
+    const it = document.createElement('div'); it.className = 'tipo-item';
+    it.innerHTML = `<span class="emoji">${t.emoji}</span><span class="cor" style="background:${t.cor};"></span><div class="info"><strong>${t.nome}</strong><span>${t.categoria || 'Sem categoria'}</span></div><button data-acao="editar" title="Editar">✏️</button><button data-acao="excluir" title="Excluir">🗑️</button>`;
+    it.querySelector('[data-acao="editar"]').onclick = () => { editandoTipoId = t.id; document.getElementById('modalTipoTitulo').textContent = 'Editar tipo'; document.getElementById('tipoNome').value = t.nome; document.getElementById('tipoEmoji').value = t.emoji; document.getElementById('tipoCor').value = t.cor; document.getElementById('tipoCategoria').value = t.categoria || ''; document.getElementById('modalTipo').classList.remove('escondido'); };
+    it.querySelector('[data-acao="excluir"]').onclick = () => { if (!confirm(`Excluir o tipo "${t.nome}"?`)) return; tiposPonto = tiposPonto.filter(x => x.id !== t.id); marcadoresMapa = marcadoresMapa.filter(m => m.tipoId !== t.id); tiposVisiveis = tiposVisiveis.filter(id => id !== t.id); salvarStorage(); localStorage.setItem('marcadores_mapa', JSON.stringify(marcadoresMapa)); localStorage.setItem('tipos_visiveis_rp', JSON.stringify(tiposVisiveis)); renderListaTipos(); atualizarLegenda(); };
+    l.appendChild(it);
   });
 }
 
 document.getElementById('btnCancelarTipo').onclick = () => { document.getElementById('modalTipo').classList.add('escondido'); };
-
 document.getElementById('btnSalvarTipo').onclick = () => {
   if (!isAdmin()) return;
-  const nome = document.getElementById('tipoNome').value.trim();
-  const emoji = document.getElementById('tipoEmoji').value.trim() || '📍';
-  const cor = document.getElementById('tipoCor').value;
-  const categoria = document.getElementById('tipoCategoria').value.trim() || 'Outros';
-  if (!nome) { alert('Digite o nome do tipo!'); return; }
-
-  if (editandoTipoId) {
-    const t = tiposPonto.find(x => x.id === editandoTipoId);
-    Object.assign(t, { nome, emoji, cor, categoria });
-  } else {
-    const novoId = 'tipo_' + Date.now();
-    tiposPonto.push({ id: novoId, nome, emoji, cor, categoria });
-    tiposVisiveis.push(novoId);
-    localStorage.setItem('tipos_visiveis_rp', JSON.stringify(tiposVisiveis));
-  }
-  salvarStorage();
-  document.getElementById('modalTipo').classList.add('escondido');
-  renderListaTipos();
+  const n = document.getElementById('tipoNome').value.trim(); const e = document.getElementById('tipoEmoji').value.trim() || '📍'; const c = document.getElementById('tipoCor').value; const cat = document.getElementById('tipoCategoria').value.trim() || 'Outros';
+  if (!n) { alert('Digite o nome!'); return; }
+  if (editandoTipoId) { const t = tiposPonto.find(x => x.id === editandoTipoId); Object.assign(t, { nome: n, emoji: e, cor: c, categoria: cat }); }
+  else { const id = 'tipo_' + Date.now(); tiposPonto.push({ id, nome: n, emoji: e, cor: c, categoria: cat }); tiposVisiveis.push(id); localStorage.setItem('tipos_visiveis_rp', JSON.stringify(tiposVisiveis)); }
+  salvarStorage(); document.getElementById('modalTipo').classList.add('escondido'); renderListaTipos();
 };
 
 // ===== EVENTOS GERAIS =====
@@ -1506,23 +1271,8 @@ document.getElementById('btnCancelarCap').onclick = fecharModalCap;
 document.getElementById('btnSalvarCap').onclick = salvarCap;
 document.getElementById('btnCancelarMarc').onclick = fecharModalMarcador;
 document.getElementById('btnSalvarMarc').onclick = salvarMarcador;
-
-document.getElementById('itemFoto').onchange = (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (ev) => { fotoTemp = ev.target.result; document.getElementById('preview').innerHTML = `<img src="${fotoTemp}"/>`; };
-  reader.readAsDataURL(file);
-};
-
-document.getElementById('marcFoto').onchange = (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (ev) => { fotoMarcTemp = ev.target.result; document.getElementById('previewMarc').innerHTML = `<img src="${fotoMarcTemp}" style="max-width:100px;border-radius:8px;" />`; };
-  reader.readAsDataURL(file);
-};
-
+document.getElementById('itemFoto').onchange = (e) => { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = (ev) => { fotoTemp = ev.target.result; document.getElementById('preview').innerHTML = `<img src="${fotoTemp}"/>`; }; r.readAsDataURL(f); };
+document.getElementById('marcFoto').onchange = (e) => { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = (ev) => { fotoMarcTemp = ev.target.result; document.getElementById('previewMarc').innerHTML = `<img src="${fotoMarcTemp}" style="max-width:100px;border-radius:8px;" />`; }; r.readAsDataURL(f); };
 document.getElementById('modal').onclick = (e) => { if (e.target.id === 'modal') fecharModal(); };
 document.getElementById('modalVeiculo').onclick = (e) => { if (e.target.id === 'modalVeiculo') fecharModalVeiculo(); };
 document.getElementById('modalCap').onclick = (e) => { if (e.target.id === 'modalCap') fecharModalCap(); };
@@ -1531,144 +1281,45 @@ document.getElementById('modalTipo').onclick = (e) => { if (e.target.id === 'mod
 document.getElementById('modalGerenciarTipos').onclick = (e) => { if (e.target.id === 'modalGerenciarTipos') document.getElementById('modalGerenciarTipos').classList.add('escondido'); };
 
 // ===== SONS =====
-const musicaFundo = new Audio('sounds/menu.mp3');
-musicaFundo.loop = true;
+const musicaFundo = new Audio('sounds/menu.mp3'); musicaFundo.loop = true;
 const somClick = new Audio('sounds/click.mp3');
-
 let somLigado = localStorage.getItem('som_ligado') !== 'off';
 let musicaIniciada = false;
 let volumeMusica = parseFloat(localStorage.getItem('volume_musica') || '0.06');
 let volumeClick = parseFloat(localStorage.getItem('volume_click') || '0.04');
-musicaFundo.volume = volumeMusica;
-somClick.volume = volumeClick;
+musicaFundo.volume = volumeMusica; somClick.volume = volumeClick;
 
-function atualizarBotaoSom() {
-  const btn = document.getElementById('btnSom');
-  if (!btn) return;
-  if (somLigado && volumeMusica > 0) { btn.textContent = '🔊'; btn.classList.remove('mutado'); }
-  else { btn.textContent = '🔇'; btn.classList.add('mutado'); }
-}
+function atualizarBotaoSom() { const b = document.getElementById('btnSom'); if (!b) return; if (somLigado && volumeMusica > 0) { b.textContent = '🔊'; b.classList.remove('mutado'); } else { b.textContent = '🔇'; b.classList.add('mutado'); } }
+function tocarClick() { if (!somLigado || volumeClick <= 0) return; try { somClick.currentTime = 0; somClick.play().catch(e => {}); } catch (e) {} }
+function iniciarMusica() { if (!somLigado || volumeMusica <= 0) return; if (musicaIniciada) return; if (musicaFundo.paused === false) { musicaIniciada = true; return; } musicaFundo.volume = 0; musicaFundo.play().then(() => { musicaIniciada = true; let v = 0; const a = volumeMusica; const i = setInterval(() => { if (v < a) { v += 0.01; musicaFundo.volume = Math.min(v, a); } else { clearInterval(i); } }, 80); }).catch(e => {}); }
 
-function tocarClick() {
-  if (!somLigado || volumeClick <= 0) return;
-  try { somClick.currentTime = 0; somClick.play().catch(e => {}); } catch (e) {}
-}
-
-function iniciarMusica() {
-  if (!somLigado || volumeMusica <= 0) return;
-  if (musicaIniciada) return;
-  if (musicaFundo.paused === false) { musicaIniciada = true; return; }
-  musicaFundo.volume = 0;
-  musicaFundo.play().then(() => {
-    musicaIniciada = true;
-    let vol = 0;
-    const alvo = volumeMusica;
-    const intervalo = setInterval(() => {
-      if (vol < alvo) { vol += 0.01; musicaFundo.volume = Math.min(vol, alvo); }
-      else { clearInterval(intervalo); }
-    }, 80);
-  }).catch(e => console.log('Erro ao tocar música:', e));
-}
-
-document.getElementById('btnSom').onclick = () => {
-  if (somLigado && musicaFundo.volume > 0 && !musicaFundo.paused) {
-    musicaFundo.pause(); musicaIniciada = false; atualizarBotaoSom();
-  } else {
-    somLigado = true; localStorage.setItem('som_ligado', 'on');
-    iniciarMusica(); atualizarBotaoSom();
-  }
-};
-
-document.addEventListener('click', (e) => {
-  if (somLigado && !musicaIniciada && volumeMusica > 0) iniciarMusica();
-  if (e.target.closest('button') || e.target.closest('.card-item') || e.target.closest('.card-veiculo') || e.target.closest('.item-opcao') || e.target.closest('.legenda-item')) {
-    tocarClick();
-  }
-});
-
+document.getElementById('btnSom').onclick = () => { if (somLigado && musicaFundo.volume > 0 && !musicaFundo.paused) { musicaFundo.pause(); musicaIniciada = false; atualizarBotaoSom(); } else { somLigado = true; localStorage.setItem('som_ligado', 'on'); iniciarMusica(); atualizarBotaoSom(); } };
+document.addEventListener('click', (e) => { if (somLigado && !musicaIniciada && volumeMusica > 0) iniciarMusica(); if (e.target.closest('button') || e.target.closest('.card-item') || e.target.closest('.card-veiculo') || e.target.closest('.item-opcao') || e.target.closest('.legenda-item')) tocarClick(); });
 atualizarBotaoSom();
 
 const _renderConfiguracoesOriginal = renderConfiguracoes;
-
 renderConfiguracoes = function() {
   _renderConfiguracoesOriginal();
-
-  const secaoSons = document.createElement('div');
-  secaoSons.className = 'config-secao';
-  secaoSons.innerHTML = `
-    <h2>🔊 Sons</h2>
-    <p>Ajuste o volume da música de fundo e dos cliques.</p>
-    <div class="volume-titulo"><strong>🎵 Música de fundo</strong><span class="volume-valor" id="volMusicaValor">${Math.round(volumeMusica * 100)}%</span></div>
-    <div class="volume-control">
-      <button class="volume-btn" id="volMusicaMinus">−</button>
-      <input type="range" id="volMusicaRange" min="0" max="100" value="${Math.round(volumeMusica * 100)}" />
-      <button class="volume-btn" id="volMusicaPlus">+</button>
-    </div>
-    <div class="volume-titulo"><strong>🔘 Som de clique</strong><span class="volume-valor" id="volClickValor">${Math.round(volumeClick * 100)}%</span></div>
-    <div class="volume-control">
-      <button class="volume-btn" id="volClickMinus">−</button>
-      <input type="range" id="volClickRange" min="0" max="100" value="${Math.round(volumeClick * 100)}" />
-      <button class="volume-btn" id="volClickPlus">+</button>
-    </div>
-    <div class="mutar-container">
-      <button class="mutar-btn ${(!somLigado || volumeMusica <= 0) ? 'mutado' : ''}" id="btnMutarTudo">
-        ${(!somLigado || volumeMusica <= 0) ? '🔇 Música Mutada (clique para ativar)' : '🔊 Mutar Música'}
-      </button>
-    </div>
+  const sS = document.createElement('div'); sS.className = 'config-secao';
+  sS.innerHTML = `
+    <h2>🔊 Sons</h2><p>Ajuste o volume.</p>
+    <div class="volume-titulo"><strong>🎵 Música</strong><span class="volume-valor" id="volMusicaValor">${Math.round(volumeMusica * 100)}%</span></div>
+    <div class="volume-control"><button class="volume-btn" id="volMusicaMinus">−</button><input type="range" id="volMusicaRange" min="0" max="100" value="${Math.round(volumeMusica * 100)}" /><button class="volume-btn" id="volMusicaPlus">+</button></div>
+    <div class="volume-titulo"><strong>🔘 Clique</strong><span class="volume-valor" id="volClickValor">${Math.round(volumeClick * 100)}%</span></div>
+    <div class="volume-control"><button class="volume-btn" id="volClickMinus">−</button><input type="range" id="volClickRange" min="0" max="100" value="${Math.round(volumeClick * 100)}" /><button class="volume-btn" id="volClickPlus">+</button></div>
+    <div class="mutar-container"><button class="mutar-btn ${(!somLigado || volumeMusica <= 0) ? 'mutado' : ''}" id="btnMutarTudo">${(!somLigado || volumeMusica <= 0) ? '🔇 Música Mutada' : '🔊 Mutar Música'}</button></div>
   `;
-  conteudoEl.appendChild(secaoSons);
-
-  function setVolumeMusica(valor) {
-    valor = Math.max(0, Math.min(100, valor));
-    volumeMusica = valor / 100;
-    localStorage.setItem('volume_musica', volumeMusica);
-    document.getElementById('volMusicaRange').value = valor;
-    document.getElementById('volMusicaValor').textContent = valor + '%';
-    musicaFundo.volume = volumeMusica;
-    if (volumeMusica === 0) { musicaFundo.pause(); musicaIniciada = false; }
-    atualizarBotaoSom();
-    atualizarBotaoMutar();
-  }
-
-  function setVolumeClick(valor) {
-    valor = Math.max(0, Math.min(100, valor));
-    volumeClick = valor / 100;
-    localStorage.setItem('volume_click', volumeClick);
-    document.getElementById('volClickRange').value = valor;
-    document.getElementById('volClickValor').textContent = valor + '%';
-    somClick.volume = volumeClick;
-  }
-
-  function atualizarBotaoMutar() {
-    const btn = document.getElementById('btnMutarTudo');
-    if (!btn) return;
-    if (!somLigado || volumeMusica <= 0) { btn.textContent = '🔇 Música Mutada (clique para ativar)'; btn.classList.add('mutado'); }
-    else { btn.textContent = '🔊 Mutar Música'; btn.classList.remove('mutado'); }
-  }
-
-  document.getElementById('volMusicaRange').oninput = (e) => setVolumeMusica(parseInt(e.target.value));
-  document.getElementById('volClickRange').oninput = (e) => setVolumeClick(parseInt(e.target.value));
-  document.getElementById('volMusicaPlus').onclick = () => setVolumeMusica(Math.round(volumeMusica * 100) + 5);
-  document.getElementById('volMusicaMinus').onclick = () => setVolumeMusica(Math.round(volumeMusica * 100) - 5);
-  document.getElementById('volClickPlus').onclick = () => setVolumeClick(Math.round(volumeClick * 100) + 5);
-  document.getElementById('volClickMinus').onclick = () => setVolumeClick(Math.round(volumeClick * 100) - 5);
-
-  document.getElementById('btnMutarTudo').onclick = () => {
-    if (somLigado && musicaFundo.volume > 0 && !musicaFundo.paused) {
-      somLigado = false; localStorage.setItem('som_ligado', 'off');
-      musicaFundo.pause(); musicaIniciada = false;
-    } else {
-      somLigado = true; localStorage.setItem('som_ligado', 'on');
-      if (volumeMusica <= 0) setVolumeMusica(25); else iniciarMusica();
-    }
-    atualizarBotaoSom();
-    atualizarBotaoMutar();
-  };
+  conteudoEl.appendChild(sS);
+  function sVM(v) { v = Math.max(0, Math.min(100, v)); volumeMusica = v / 100; localStorage.setItem('volume_musica', volumeMusica); document.getElementById('volMusicaRange').value = v; document.getElementById('volMusicaValor').textContent = v + '%'; musicaFundo.volume = volumeMusica; if (volumeMusica === 0) { musicaFundo.pause(); musicaIniciada = false; } atualizarBotaoSom(); aBM(); }
+  function sVC(v) { v = Math.max(0, Math.min(100, v)); volumeClick = v / 100; localStorage.setItem('volume_click', volumeClick); document.getElementById('volClickRange').value = v; document.getElementById('volClickValor').textContent = v + '%'; somClick.volume = volumeClick; }
+  function aBM() { const b = document.getElementById('btnMutarTudo'); if (!b) return; if (!somLigado || volumeMusica <= 0) { b.textContent = '🔇 Música Mutada'; b.classList.add('mutado'); } else { b.textContent = '🔊 Mutar Música'; b.classList.remove('mutado'); } }
+  document.getElementById('volMusicaRange').oninput = (e) => sVM(parseInt(e.target.value));
+  document.getElementById('volClickRange').oninput = (e) => sVC(parseInt(e.target.value));
+  document.getElementById('volMusicaPlus').onclick = () => sVM(Math.round(volumeMusica * 100) + 5);
+  document.getElementById('volMusicaMinus').onclick = () => sVM(Math.round(volumeMusica * 100) - 5);
+  document.getElementById('volClickPlus').onclick = () => sVC(Math.round(volumeClick * 100) + 5);
+  document.getElementById('volClickMinus').onclick = () => sVC(Math.round(volumeClick * 100) - 5);
+  document.getElementById('btnMutarTudo').onclick = () => { if (somLigado && musicaFundo.volume > 0 && !musicaFundo.paused) { somLigado = false; localStorage.setItem('som_ligado', 'off'); musicaFundo.pause(); musicaIniciada = false; } else { somLigado = true; localStorage.setItem('som_ligado', 'on'); if (volumeMusica <= 0) sVM(25); else iniciarMusica(); } atualizarBotaoSom(); aBM(); };
 };
 
-document.addEventListener('DOMContentLoaded', () => {
-  const app = document.getElementById('appPrincipal');
-  const login = document.getElementById('telaLogin');
-  if (app) app.classList.add('escondido');
-  if (login) login.classList.remove('escondido');
-});
+document.addEventListener('DOMContentLoaded', () => { const a = document.getElementById('appPrincipal'); const l = document.getElementById('telaLogin'); if (a) a.classList.add('escondido'); if (l) l.classList.remove('escondido'); });
