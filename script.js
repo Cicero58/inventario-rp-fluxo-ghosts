@@ -171,6 +171,15 @@ function montarAbas() {
       btn.onclick = () => { abaAtual = b.id; veiculoAberto = null; montarAbas(); render(); };
       abasEl.appendChild(btn);
     });
+  // Aba Admin (só pra admins)
+  if (window.tipoUsuario === 'admin') {
+    const btnAdmin = document.createElement('button');
+    btnAdmin.textContent = '👑 Admin';
+    btnAdmin.style.background = '#ffaa00';
+    btnAdmin.style.color = '#000';
+    btnAdmin.onclick = () => abrirPainelAdmin();
+    abasEl.appendChild(btnAdmin);
+  }
   }
 
   const btnG = document.createElement('button');
