@@ -480,28 +480,165 @@ header, nav { flex-shrink: 0; }
 
 @media (max-width: 768px) { #chatSidebar { width: 100%; position: absolute; inset: 0; z-index: 100; } }
 
-/* ===== HEADER EVENTO PROFISSIONAL ===== */
-.header-evento { position: absolute; left: 20px; top: 8px; background: var(--bg-2); border: 1px solid #ffaa00; border-radius: 8px; padding: 6px; display: none; align-items: center; gap: 12px; cursor: pointer; box-shadow: 0 4px 15px rgba(255, 170, 0, 0.3); transition: all 0.3s ease; animation: flutuar 4s ease-in-out infinite; min-width: 320px; max-width: 450px; height: 64px; overflow: hidden; }
-.header-evento-bg { position: absolute; inset: 0; background-size: cover; background-position: center; opacity: 0.4; z-index: 0; border-radius: 7px; }
-.header-evento::before { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.2) 100%); z-index: 1; border-radius: 7px; }
-.header-evento:hover { box-shadow: 0 6px 20px rgba(255, 170, 0, 0.6); border-color: #ffcc00; transform: translateY(-2px) scale(1.02); }
-.header-evento .icone-evento { width: 48px; height: 48px; object-fit: cover; border-radius: 6px; border: 2px solid #ffaa00; z-index: 2; background: #000; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
-.header-evento .texto-evento { display: flex; flex-direction: column; z-index: 2; flex: 1; }
-.header-evento .titulo-evento { color: #ffaa00; font-size: 0.95rem; font-weight: 900; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 1px 1px 2px #000; }
-.header-evento .desc-evento { color: #eee; font-size: 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 1px 1px 2px #000; }
+/* ===== HEADER EVENTO - TÍTULO CHAMATIVO ===== */
+.header-evento {
+  position: absolute;
+  left: 20px;
+  top: 8px;
+  background: var(--bg-2);
+  border: 2px solid #ffaa00;
+  border-radius: 8px;
+  padding: 8px 12px;
+  display: none; 
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(255, 170, 0, 0.4);
+  transition: all 0.3s ease;
+  min-width: 320px;
+  max-width: 450px;
+  height: 64px;
+  overflow: hidden;
+}
+
+/* Fundo do card */
+.header-evento-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  opacity: 0.3;
+  z-index: 0;
+  border-radius: 6px;
+}
+
+/* Filtro escuro */
+.header-evento::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 100%);
+  z-index: 1;
+  border-radius: 6px;
+}
+
+.header-evento:hover {
+  box-shadow: 0 6px 25px rgba(255, 170, 0, 0.8);
+  border-color: #ffcc00;
+  transform: scale(1.03);
+}
+
+.header-evento .icone-evento {
+  width: 42px;
+  height: 42px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 2px solid #ffaa00;
+  z-index: 2;
+  background: #000;
+}
+
+.header-evento .texto-evento {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  z-index: 2;
+  flex: 1;
+}
+
+/* TÍTULO CHAMATIVO (Piscando) */
+.header-evento .titulo-evento {
+  color: #ffcc00;
+  font-size: 1.05rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 0 10px #ffaa00, 1px 1px 2px #000;
+  animation: piscarTitulo 1.5s ease-in-out infinite;
+}
+
+@keyframes piscarTitulo {
+  0%, 100% { opacity: 1; text-shadow: 0 0 15px #ffaa00, 1px 1px 2px #000; }
+  50% { opacity: 0.8; text-shadow: 0 0 5px #ffaa00, 1px 1px 2px #000; }
+}
 
 /* ===== MODAL LEITURA DE EVENTO ===== */
-#modalEventoRead .modal-conteudo { max-width: 550px; padding: 0; overflow: hidden; display: flex; flex-direction: column; background: var(--bg-2); }
+#modalEventoRead .modal-conteudo {
+  max-width: 600px;
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-2);
+  max-height: 95vh;
+}
 
-.evento-read-banner { width: 100%; height: 200px; background-size: cover; background-position: center; background-color: var(--bg-3); position: relative; }
-.evento-read-banner::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, var(--bg-2) 0%, transparent 100%); }
+.evento-read-banner {
+  width: 100%;
+  height: 160px;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--bg-3);
+  position: relative;
+}
 
-.evento-read-content { padding: 0 24px 24px 24px; position: relative; z-index: 2; margin-top: -60px; display: flex; flex-direction: column; align-items: center; }
+.evento-read-banner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, var(--bg-2) 0%, transparent 100%);
+}
 
-.evento-read-icone { width: 120px; height: 120px; border-radius: 16px; border: 4px solid #ffaa00; background: #000; object-fit: cover; box-shadow: 0 8px 25px rgba(0,0,0,0.6); margin-bottom: 16px; }
+.evento-read-content {
+  padding: 0 24px 24px 24px;
+  position: relative;
+  z-index: 2;
+  margin-top: -40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-y: auto;
+}
 
-.evento-read-titulo { font-size: 1.6rem; color: #ffaa00; font-weight: 900; line-height: 1.2; text-align: center; margin-bottom: 24px; text-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+/* IMAGEM GRANDE NO CENTRO */
+.evento-read-icone {
+  width: 280px;
+  height: auto;
+  max-height: 280px;
+  border-radius: 12px;
+  border: 3px solid #ffaa00;
+  background: #000;
+  object-fit: contain;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.8), 0 0 15px rgba(255,170,0,0.4);
+  margin-bottom: 20px;
+}
 
-.evento-read-desc { font-size: 1rem; color: var(--texto); line-height: 1.6; white-space: pre-wrap; background: var(--bg-3); padding: 20px; border-radius: 12px; border-left: 4px solid #ffaa00; width: 100%; box-sizing: border-box; text-align: left; }
+.evento-read-titulo {
+  font-size: 1.8rem;
+  color: #ffaa00;
+  font-weight: 900;
+  line-height: 1.2;
+  text-align: center;
+  margin-bottom: 20px;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+}
+
+.evento-read-desc {
+  font-size: 1rem;
+  color: var(--texto);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  background: var(--bg-3);
+  padding: 20px;
+  border-radius: 12px;
+  border-left: 4px solid #ffaa00;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: left;
+  max-height: 250px;
+  overflow-y: auto;
+}
 
 @media (max-width: 700px) { .header-evento { display: none !important; } }

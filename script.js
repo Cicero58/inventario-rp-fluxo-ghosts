@@ -154,12 +154,12 @@ function iniciarSyncFirestore() {
       if (d.id === 'moderacao') { banidos = d.data().banidos || []; silenciados = d.data().silenciados || {}; }
       if (d.id === 'eventos') {
         const ev = d.data();
-        window.eventoAtual = ev; // Guarda os dados pra abrir o modal
+        window.eventoAtual = ev;
         const el = document.getElementById('headerEvento');
         if (el) {
           if (ev.titulo && ev.titulo.trim()) {
             document.getElementById('eventoTitulo').textContent = ev.titulo;
-            document.getElementById('eventoDesc').textContent = ev.descricao || 'Clique para saber mais';
+            document.getElementById('eventoDesc').textContent = '🔥 Clique para ler o anúncio!'; 
             
             const imgEl = document.getElementById('eventoImg');
             if (ev.imagem) { imgEl.src = ev.imagem; imgEl.style.display = 'block'; } 
