@@ -154,6 +154,7 @@ function iniciarSyncFirestore() {
       if (d.id === 'moderacao') { banidos = d.data().banidos || []; silenciados = d.data().silenciados || {}; }
       if (d.id === 'eventos') {
         const ev = d.data();
+        window.eventoAtual = ev; // Guarda os dados pra abrir o modal
         const el = document.getElementById('headerEvento');
         if (el) {
           if (ev.titulo && ev.titulo.trim()) {
@@ -161,15 +162,14 @@ function iniciarSyncFirestore() {
             document.getElementById('eventoDesc').textContent = ev.descricao || 'Clique para saber mais';
             
             const imgEl = document.getElementById('eventoImg');
-            if (ev.imagem && ev.imagem.trim()) {
-              imgEl.src = ev.imagem;
-              imgEl.style.display = 'block';
-            } else {
-              imgEl.style.display = 'none';
-            }
+            if (ev.imagem) { imgEl.src = ev.imagem; imgEl.style.display = 'block'; } 
+            else { imgEl.style.display = 'none'; }
+
+            const bgEl = document.getElementById('eventoBg');
+            if (ev.banner) { bgEl.style.backgroundImage = `url('${ev.banner}')`; bgEl.style.display = 'block'; }
+            else { bgEl.style.display = 'none'; }
             
             el.style.display = 'flex';
-            el.onclick = isAdmin() ? () => abrirModalEventos() : null;
           } else {
             el.style.display = 'none';
           }
@@ -863,15 +863,45 @@ document.getElementById('btnSalvarTipo').onclick = async () => {
 function abrirModalEventos() {
   if (!isAdmin()) return;
   FS().collection('config').doc('eventos').get().then(d => {
-    const data = d.exists ? d.data() : { titulo: '', descricao: '', imagem: '' };
+    const data = d.exists ? d.data() : { titulo: '', descricao: '', imagem: '', banner: '' };
     
     document.getElementById('editEventoTitulo').value = data.titulo || '';
     document.getElementById('editEventoDesc').value = data.descricao || '';
     document.getElementById('editEventoImg').value = data.imagem || '';
+    // Se você adicionou um input pro banner no HTML, pode setar aqui
+    const elBanner = document.getElementById('editEventoBanner');
+    if (elBanner) elBanner.value = data.banner || '';
     
     document.getElementById('modalEventoEdit').classList.remove('escondido');
   });
 }
+
+function abrirModalEventoRead() {
+  const ev = window.eventoAtual;
+  if (!ev || !ev.titulo) return;
+  
+  document.getElementById('readEventoTitulo').textContent = ev.titulo;
+  document.getElementById('readEventoDesc').textContent = ev.descricao || 'Sem descrição adicional.';
+  
+  const imgEl = document.getElementById('readEventoImg');
+  if (ev.imagem) { imgEl.src = ev.imagem; imgEl.style.display = 'block'; }
+  else { imgEl.style.display = 'none'; }
+
+  const bgEl = document.getElementById('readEventoBanner');
+  if (ev.banner) { bgEl.style.backgroundImage = `url('${ev.banner}')`; bgEl.style.display = 'block'; }
+  else { bgEl.style.display = 'none'; }
+  
+  document.getElementById('btnEditEventoRead').style.display = isAdmin() ? 'block' : 'none';
+  document.getElementById('modalEventoRead').classList.remove('escondido');
+}
+
+// Vinculando os cliques
+document.getElementById('headerEvento').onclick = abrirModalEventoRead;
+document.getElementById('btnFecharEventoRead').onclick = () => document.getElementById('modalEventoRead').classList.add('escondido');
+document.getElementById('btnEditEventoRead').onclick = () => {
+  document.getElementById('modalEventoRead').classList.add('escondido');
+  abrirModalEventos();
+};
 
 document.getElementById('btnCancelarEvento').onclick = () => {
   document.getElementById('modalEventoEdit').classList.add('escondido');
@@ -881,8 +911,10 @@ document.getElementById('btnSalvarEvento').onclick = async () => {
   const tit = document.getElementById('editEventoTitulo').value.trim();
   const desc = document.getElementById('editEventoDesc').value.trim();
   const img = document.getElementById('editEventoImg').value.trim();
+  const elBanner = document.getElementById('editEventoBanner');
+  const banner = elBanner ? elBanner.value.trim() : ''; // Caso você adicione o input banner
   
-  await FS().collection('config').doc('eventos').set({ titulo: tit, descricao: desc, imagem: img });
+  await FS().collection('config').doc('eventos').set({ titulo: tit, descricao: desc, imagem: img, banner: banner });
   document.getElementById('modalEventoEdit').classList.add('escondido');
 };
 
@@ -1195,6 +1227,7 @@ document.getElementById('modalMarcador').onclick = (e) => { if (e.target.id === 
 document.getElementById('modalTipo').onclick = (e) => { if (e.target.id === 'modalTipo') document.getElementById('modalTipo').classList.add('escondido'); };
 document.getElementById('modalGerenciarTipos').onclick = (e) => { if (e.target.id === 'modalGerenciarTipos') document.getElementById('modalGerenciarTipos').classList.add('escondido'); };
 document.getElementById('modalEventoEdit').onclick = (e) => { if (e.target.id === 'modalEventoEdit') document.getElementById('modalEventoEdit').classList.add('escondido'); };
+document.getElementById('modalEventoRead').onclick = (e) => { if (e.target.id === 'modalEventoRead') document.getElementById('modalEventoRead').classList.add('escondido'); };
 
 // ===== SONS =====
 const musicaFundo = new Audio('sounds/menu.mp3'); musicaFundo.loop = true;

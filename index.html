@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Inventário RP</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="style.css?v=8" />
+<link rel="stylesheet" href="style.css?v=9" />
 </head>
 <body>
 
@@ -37,8 +37,9 @@
 
   <header>
     <!-- FEED DE EVENTOS -->
-    <div id="headerEvento" class="header-evento" title="Clique para ver o Feed">
-      <img id="eventoImg" src="" style="display:none;">
+    <div id="headerEvento" class="header-evento" title="Clique para ler o anúncio">
+      <div id="eventoBg" class="header-evento-bg"></div>
+      <img id="eventoImg" class="icone-evento" src="" style="display:none;">
       <div class="texto-evento">
         <div id="eventoTitulo" class="titulo-evento"></div>
         <div id="eventoDesc" class="desc-evento"></div>
@@ -94,19 +95,43 @@
     </div>
   </div>
 
-  <!-- MODAL EVENTO (PARA ADMIN EDITAR) -->
+  <!-- ===== MODAL EVENTO: LEITURA (Para todo mundo ver) ===== -->
+  <div id="modalEventoRead" class="modal escondido">
+    <div class="modal-conteudo">
+      <div id="readEventoBanner" class="evento-read-banner"></div>
+      
+      <div class="evento-read-content">
+        <div class="evento-read-header">
+          <img id="readEventoImg" class="evento-read-icone" src="" style="display:none;">
+          <div id="readEventoTitulo" class="evento-read-titulo"></div>
+        </div>
+        
+        <div id="readEventoDesc" class="evento-read-desc"></div>
+        
+        <div class="botoes" style="margin-top:20px; justify-content: flex-end;">
+          <button id="btnFecharEventoRead" class="secundario">Fechar</button>
+          <button id="btnEditEventoRead" style="background:#ffaa00; color:#000; display:none;">✏️ Editar Anúncio</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL EVENTO: EDIÇÃO (Só Admin) ===== -->
   <div id="modalEventoEdit" class="modal escondido">
     <div class="modal-conteudo">
       <h2>📢 Configurar Feed de Evento</h2>
       <p style="font-size:0.8rem; color:var(--texto-sec); margin-bottom:12px;">Deixe em branco e salve para apagar o evento da tela.</p>
       
+      <label>Link do Banner de Fundo (estilo Faixa Discord)</label>
+      <input type="text" id="editEventoBanner" placeholder="Cole o link da imagem da faixa aqui" />
+
       <label>Título do Evento</label>
       <input type="text" id="editEventoTitulo" placeholder="Ex: Farm Valendo Prêmio!" />
       
-      <label>Descrição Curta</label>
-      <input type="text" id="editEventoDesc" placeholder="Ex: Quem farmar mais leva 50k" />
+      <label>Descrição Curta / Completa</label>
+      <textarea id="editEventoDesc" placeholder="Ex: Quem farmar mais leva 50k..." rows="3" style="width:100%;padding:10px;background:var(--bg-3);border:1px solid var(--borda);border-radius:8px;color:var(--texto);font-family:inherit;resize:vertical;"></textarea>
 
-      <label>Link da Imagem / GIF (opcional)</label>
+      <label>Link da Imagem / GIF do Ícone (opcional)</label>
       <input type="text" id="editEventoImg" placeholder="Cole o link .gif ou .png aqui" />
       
       <div class="botoes">
