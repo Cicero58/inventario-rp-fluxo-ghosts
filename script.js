@@ -245,6 +245,16 @@ function montarAbas() {
   bc.appendChild(badge);
   abasEl.appendChild(bc);
 
+  // BOTÃO DE EVENTOS (SÓ ADMIN)
+  if (isAdmin()) {
+    const be = document.createElement('button');
+    be.textContent = '📢 Eventos';
+    be.style.background = '#ffaa00';
+    be.style.color = '#000';
+    be.onclick = abrirModalEventos;
+    abasEl.appendChild(be);
+  }
+
   const bcfg = document.createElement('button'); bcfg.textContent = '⚙️ Configurações'; bcfg.classList.toggle('ativo', abaAtual === 'config');
   bcfg.onclick = () => { abaAtual = 'config'; veiculoAberto = null; montarAbas(); render(); }; abasEl.appendChild(bcfg);
 
@@ -1221,7 +1231,7 @@ function renderSecaoSom() {
   document.getElementById('volMusicaMinus').onclick = () => sVM(Math.round(volumeMusica * 100) - 5);
   document.getElementById('volClickPlus').onclick = () => sVC(Math.round(volumeClick * 100) + 5);
   document.getElementById('volClickMinus').onclick = () => sVC(Math.round(volumeClick * 100) - 5);
-  document.getElementById('btnMutarTudo').onclick = () => { if (somLigado && musicaFundo.volume > 0 && !musicaFundo.paused) { somLigado = false; localStorage.setItem('som_ligado', 'off'); musicaFundo.pause(); musicaIniciada = false; } else { somLigado = true; localStorage.setItem('som_ligado', 'on'); if (volumeMusica <= 0) sVM(25); else iniciarMusica(); } atualizarBotaoSom(); aBM(); };
+  document.getElementById('btnMutarTudo').onclick = () => { if (somLigado && musicaFundo.volume > 0 && !musicaFundo.paused) { somLigado = false; localStorage.setItem('som_ligado', 'off'); musicaFundo.pause(); musicaIniciada = false; } else { somLigado = true; localStorage.setItem('som_ligado', 'on'); if (volumeMusica <= 0) sVM(25); else iniciarMusica(); } atualizarBotaoSim(); aBM(); };
 }
 
 document.addEventListener('DOMContentLoaded', () => {
