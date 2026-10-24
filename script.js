@@ -81,7 +81,7 @@ const TEMAS = ['escuro', 'claro', 'neon'];
 
 // ===== ESTADO =====
 let itens = [], capacidades = { casa: 150, moto: 100 }, veiculos = [], tiposPonto = [...TIPOS_PADRAO], marcadoresMapa = [];
-let clientesDisponiveis = [], banidos = [], silenciados = [];
+let clientesDisponiveis = [], banidos = [], silenciados = {};
 let abaAtual = 'casa', veiculoAberto = null, editandoId = null, editandoVeicId = null;
 let editandoTipoId = null, editandoMarcId = null, fotoTemp = null, fotoMarcTemp = null, itemBaseSelecionado = null;
 let ordenacao = 'nome', clienteSelecionadoAdmin = null;
@@ -157,9 +157,18 @@ function iniciarSyncFirestore() {
         const el = document.getElementById('headerEvento');
         if (el) {
           if (ev.titulo && ev.titulo.trim()) {
-            el.textContent = '📢 ' + ev.titulo;
-            el.style.display = 'block';
-            el.title = (ev.descricao || ev.titulo) + ' (Clique para editar se for admin)';
+            document.getElementById('eventoTitulo').textContent = ev.titulo;
+            document.getElementById('eventoDesc').textContent = ev.descricao || 'Clique para saber mais';
+            
+            const imgEl = document.getElementById('eventoImg');
+            if (ev.imagem && ev.imagem.trim()) {
+              imgEl.src = ev.imagem;
+              imgEl.style.display = 'block';
+            } else {
+              imgEl.style.display = 'none';
+            }
+            
+            el.style.display = 'flex';
             el.onclick = isAdmin() ? () => abrirModalEventos() : null;
           } else {
             el.style.display = 'none';
@@ -844,14 +853,28 @@ document.getElementById('btnSalvarTipo').onclick = async () => {
 function abrirModalEventos() {
   if (!isAdmin()) return;
   FS().collection('config').doc('eventos').get().then(d => {
-    const data = d.exists ? d.data() : { titulo: '', descricao: '' };
-    const tit = prompt('Título do evento (deixe vazio para apagar):', data.titulo || '');
-    if (tit !== null) {
-      const desc = prompt('Descrição do evento:', data.descricao || '');
-      FS().collection('config').doc('eventos').set({ titulo: tit.trim(), descricao: (desc||'').trim() });
-    }
+    const data = d.exists ? d.data() : { titulo: '', descricao: '', imagem: '' };
+    
+    document.getElementById('editEventoTitulo').value = data.titulo || '';
+    document.getElementById('editEventoDesc').value = data.descricao || '';
+    document.getElementById('editEventoImg').value = data.imagem || '';
+    
+    document.getElementById('modalEventoEdit').classList.remove('escondido');
   });
 }
+
+document.getElementById('btnCancelarEvento').onclick = () => {
+  document.getElementById('modalEventoEdit').classList.add('escondido');
+};
+
+document.getElementById('btnSalvarEvento').onclick = async () => {
+  const tit = document.getElementById('editEventoTitulo').value.trim();
+  const desc = document.getElementById('editEventoDesc').value.trim();
+  const img = document.getElementById('editEventoImg').value.trim();
+  
+  await FS().collection('config').doc('eventos').set({ titulo: tit, descricao: desc, imagem: img });
+  document.getElementById('modalEventoEdit').classList.add('escondido');
+};
 
 // ===== CHAT GLOBAL - SIDEBAR =====
 let unsubChat = null, chatMsgs = [], ultimoEnvioEm = 0, editandoMsgId = null, msgRespondendo = null;
@@ -1161,6 +1184,7 @@ document.getElementById('modalCap').onclick = (e) => { if (e.target.id === 'moda
 document.getElementById('modalMarcador').onclick = (e) => { if (e.target.id === 'modalMarcador') fecharModalMarcador(); };
 document.getElementById('modalTipo').onclick = (e) => { if (e.target.id === 'modalTipo') document.getElementById('modalTipo').classList.add('escondido'); };
 document.getElementById('modalGerenciarTipos').onclick = (e) => { if (e.target.id === 'modalGerenciarTipos') document.getElementById('modalGerenciarTipos').classList.add('escondido'); };
+document.getElementById('modalEventoEdit').onclick = (e) => { if (e.target.id === 'modalEventoEdit') document.getElementById('modalEventoEdit').classList.add('escondido'); };
 
 // ===== SONS =====
 const musicaFundo = new Audio('sounds/menu.mp3'); musicaFundo.loop = true;

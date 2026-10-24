@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Inventário RP</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="style.css?v=6" />
+<link rel="stylesheet" href="style.css?v=7" />
 </head>
 <body>
 
@@ -36,8 +36,14 @@
 <div id="appPrincipal" class="escondido">
 
   <header>
-    <!-- FEED DE EVENTOS (Onde fica o aviso) -->
-    <div id="headerEvento" class="header-evento" title="Clique para ver o Feed">📢 Carregando evento...</div>
+    <!-- FEED DE EVENTOS -->
+    <div id="headerEvento" class="header-evento" title="Clique para ver o Feed">
+      <img id="eventoImg" src="" style="display:none;">
+      <div class="texto-evento">
+        <div id="eventoTitulo" class="titulo-evento"></div>
+        <div id="eventoDesc" class="desc-evento"></div>
+      </div>
+    </div>
     
     <h1 id="tituloEaster">📦 Inventário RP</h1>
     <p id="resumo">0 itens • 0 unidades</p>
@@ -84,6 +90,28 @@
           <button id="btnEmoji" title="Emojis">😀</button>
           <button id="chatEnviar" class="enviar" title="Enviar (Enter)">📤</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL EVENTO (PARA ADMIN EDITAR) -->
+  <div id="modalEventoEdit" class="modal escondido">
+    <div class="modal-conteudo">
+      <h2>📢 Configurar Feed de Evento</h2>
+      <p style="font-size:0.8rem; color:var(--texto-sec); margin-bottom:12px;">Deixe em branco e salve para apagar o evento da tela.</p>
+      
+      <label>Título do Evento</label>
+      <input type="text" id="editEventoTitulo" placeholder="Ex: Farm Valendo Prêmio!" />
+      
+      <label>Descrição Curta</label>
+      <input type="text" id="editEventoDesc" placeholder="Ex: Quem farmar mais leva 50k" />
+
+      <label>Link da Imagem / GIF (opcional)</label>
+      <input type="text" id="editEventoImg" placeholder="Cole o link .gif ou .png aqui" />
+      
+      <div class="botoes">
+        <button id="btnCancelarEvento" class="secundario">Cancelar</button>
+        <button id="btnSalvarEvento" style="background:#ffaa00; color:#000;">Salvar Evento</button>
       </div>
     </div>
   </div>
