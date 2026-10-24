@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Inventário RP</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="style.css?v=9" />
+<link rel="stylesheet" href="style.css?v=10" />
 </head>
 <body>
 
@@ -101,14 +101,16 @@
       <div id="readEventoBanner" class="evento-read-banner"></div>
       
       <div class="evento-read-content">
-        <div class="evento-read-header">
-          <img id="readEventoImg" class="evento-read-icone" src="" style="display:none;">
-          <div id="readEventoTitulo" class="evento-read-titulo"></div>
-        </div>
+        <!-- Imagem grande centralizada no topo -->
+        <img id="readEventoImg" class="evento-read-icone" src="" style="display:none;">
         
+        <!-- Título -->
+        <div id="readEventoTitulo" class="evento-read-titulo"></div>
+        
+        <!-- Descrição em baixo -->
         <div id="readEventoDesc" class="evento-read-desc"></div>
         
-        <div class="botoes" style="margin-top:20px; justify-content: flex-end;">
+        <div class="botoes" style="margin-top:20px; justify-content: center; width: 100%;">
           <button id="btnFecharEventoRead" class="secundario">Fechar</button>
           <button id="btnEditEventoRead" style="background:#ffaa00; color:#000; display:none;">✏️ Editar Anúncio</button>
         </div>

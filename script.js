@@ -868,7 +868,7 @@ function abrirModalEventos() {
     document.getElementById('editEventoTitulo').value = data.titulo || '';
     document.getElementById('editEventoDesc').value = data.descricao || '';
     document.getElementById('editEventoImg').value = data.imagem || '';
-    // Se você adicionou um input pro banner no HTML, pode setar aqui
+    
     const elBanner = document.getElementById('editEventoBanner');
     if (elBanner) elBanner.value = data.banner || '';
     
@@ -912,7 +912,7 @@ document.getElementById('btnSalvarEvento').onclick = async () => {
   const desc = document.getElementById('editEventoDesc').value.trim();
   const img = document.getElementById('editEventoImg').value.trim();
   const elBanner = document.getElementById('editEventoBanner');
-  const banner = elBanner ? elBanner.value.trim() : ''; // Caso você adicione o input banner
+  const banner = elBanner ? elBanner.value.trim() : '';
   
   await FS().collection('config').doc('eventos').set({ titulo: tit, descricao: desc, imagem: img, banner: banner });
   document.getElementById('modalEventoEdit').classList.add('escondido');
