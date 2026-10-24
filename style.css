@@ -637,8 +637,6 @@ header, nav { flex-shrink: 0; }
   width: 100%;
   box-sizing: border-box;
   text-align: left;
-  max-height: 250px;
-  overflow-y: auto;
 }
 
 @media (max-width: 700px) { .header-evento { display: none !important; } }
