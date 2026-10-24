@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Inventário RP</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="style.css?v=5" />
+<link rel="stylesheet" href="style.css?v=6" />
 </head>
 <body>
 
@@ -36,6 +36,9 @@
 <div id="appPrincipal" class="escondido">
 
   <header>
+    <!-- FEED DE EVENTOS (Onde fica o aviso) -->
+    <div id="headerEvento" class="header-evento" title="Clique para ver o Feed">📢 Carregando evento...</div>
+    
     <h1 id="tituloEaster">📦 Inventário RP</h1>
     <p id="resumo">0 itens • 0 unidades</p>
     <button id="btnTema" title="Alternar tema">🌙</button>
@@ -386,7 +389,6 @@
         window.tipoUsuario = 'cliente';
       }
 
-      // Escuta mudanças no próprio doc (pra atualizar a leitura do chat no badge)
       if (!window.unsubUserDoc) {
         window.unsubUserDoc = firebase.firestore().collection('usuarios').doc(user.uid).onSnapshot(d => {
           if (d.exists) {

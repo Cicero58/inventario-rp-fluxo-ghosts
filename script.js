@@ -81,7 +81,7 @@ const TEMAS = ['escuro', 'claro', 'neon'];
 
 // ===== ESTADO =====
 let itens = [], capacidades = { casa: 150, moto: 100 }, veiculos = [], tiposPonto = [...TIPOS_PADRAO], marcadoresMapa = [];
-let clientesDisponiveis = [], banidos = [], silenciados = {};
+let clientesDisponiveis = [], banidos = [], silenciados = [];
 let abaAtual = 'casa', veiculoAberto = null, editandoId = null, editandoVeicId = null;
 let editandoTipoId = null, editandoMarcId = null, fotoTemp = null, fotoMarcTemp = null, itemBaseSelecionado = null;
 let ordenacao = 'nome', clienteSelecionadoAdmin = null;
@@ -152,6 +152,20 @@ function iniciarSyncFirestore() {
       if (d.id === 'capacidades') capacidades = d.data();
       if (d.id === 'tiposPonto') { const l = d.data().lista; if (Array.isArray(l) && l.length) tiposPonto = l; }
       if (d.id === 'moderacao') { banidos = d.data().banidos || []; silenciados = d.data().silenciados || {}; }
+      if (d.id === 'eventos') {
+        const ev = d.data();
+        const el = document.getElementById('headerEvento');
+        if (el) {
+          if (ev.titulo && ev.titulo.trim()) {
+            el.textContent = '📢 ' + ev.titulo;
+            el.style.display = 'block';
+            el.title = (ev.descricao || ev.titulo) + ' (Clique para editar se for admin)';
+            el.onclick = isAdmin() ? () => abrirModalEventos() : null;
+          } else {
+            el.style.display = 'none';
+          }
+        }
+      }
     });
     montarAbas(); render();
   });
@@ -162,7 +176,7 @@ function iniciarSyncFirestore() {
       render();
     });
     unsubs.usuariosChat = FS().collection('usuarios').onSnapshot(s => {
-      window.todosUsuarios = s.docs.map(d => ({ uid: d.id, ...d.data() }));
+      window.todosUsuarios = s.docs.map(d => ({ id: d.id, ...d.data() }));
     });
   } else {
     window.todosUsuarios = [{ uid: uid, email: firebase.auth().currentUser.email, tipo: window.tipoUsuario }];
@@ -826,10 +840,23 @@ document.getElementById('btnSalvarTipo').onclick = async () => {
   document.getElementById('modalTipo').classList.add('escondido'); renderListaTipos();
 };
 
+// ===== EVENTOS =====
+function abrirModalEventos() {
+  if (!isAdmin()) return;
+  FS().collection('config').doc('eventos').get().then(d => {
+    const data = d.exists ? d.data() : { titulo: '', descricao: '' };
+    const tit = prompt('Título do evento (deixe vazio para apagar):', data.titulo || '');
+    if (tit !== null) {
+      const desc = prompt('Descrição do evento:', data.descricao || '');
+      FS().collection('config').doc('eventos').set({ titulo: tit.trim(), descricao: (desc||'').trim() });
+    }
+  });
+}
+
 // ===== CHAT GLOBAL - SIDEBAR =====
 let unsubChat = null, chatMsgs = [], ultimoEnvioEm = 0, editandoMsgId = null, msgRespondendo = null;
 let chatTamanho = 30;
-let ultimoRenderHashChat = ''; // Trava de renderização
+let ultimoRenderHashChat = '';
 const RATE_LIMIT_MS = 3000;
 
 function toggleChatSidebar() {
@@ -838,7 +865,7 @@ function toggleChatSidebar() {
   if (!sb.classList.contains('escondido')) {
     iniciarChatListener();
     setTimeout(() => { document.getElementById('chatInput').focus(); rolarChatFinal(); }, 100);
-    atualizarBadgeChat(); // Atualiza o badge sem disparar o banco
+    atualizarBadgeChat();
   } else {
     if (unsubChat) { unsubChat(); unsubChat = null; }
   }
@@ -857,8 +884,6 @@ function iniciarChatListener() {
 function atualizarBadgeChat() {
   const badge = document.getElementById('navChatBadge');
   if (!badge) return;
-  
-  // Pega a data de leitura do app inteiro (guardada no localStorage pra não pesar no Firestore)
   const ultimaLeituraStr = localStorage.getItem('ultima_leitura_chat_' + uidAtual()) || new Date(0).toISOString();
   const ultLeitura = new Date(ultimaLeituraStr);
   
@@ -876,14 +901,12 @@ function renderChat() {
   const box = document.getElementById('chatMensagens');
   if (!box) return;
   
-  // Trava: se as mensagens forem exatamente as mesmas da última renderização, para aqui e não pisca.
   const hashAtual = chatMsgs.map(m => m.id + (m.editadaEm ? 'e' : '')).join(',') + editandoMsgId + (msgRespondendo ? msgRespondendo.id : '');
   if (hashAtual === ultimoRenderHashChat) return;
   ultimoRenderHashChat = hashAtual;
 
   const estaNoFinal = box.scrollHeight - box.scrollTop - box.clientHeight < 100;
   
-  // Marca como lido no localStorage apenas (evita o loop no Firestore)
   if (chatMsgs.length > 0 && document.getElementById('chatSidebar').classList.contains('escondido') === false) {
     localStorage.setItem('ultima_leitura_chat_' + uidAtual(), new Date().toISOString());
   }
@@ -899,7 +922,6 @@ function renderChat() {
     const estaEditando = editandoMsgId === m.id;
     const hora = m.criadoEm && m.criadoEm.toDate ? m.criadoEm.toDate() : new Date();
     
-    // Separador de data
     const diaStr = hora.toLocaleDateString('pt-BR');
     if (diaStr !== ultimoDia) {
       htmlParts.push(`<div class="chat-separador-data">${diaStr === new Date().toLocaleDateString('pt-BR') ? 'Hoje' : diaStr}</div>`);
@@ -907,7 +929,6 @@ function renderChat() {
       ultimoAutor = '';
     }
 
-    // Agrupar mensagens
     const consecutiva = (m.autorUid === ultimoAutor) && (hora.getTime() - ultimaHora < 120000);
     if (!consecutiva) ultimoAutor = m.autorUid;
     ultimaHora = hora.getTime();
@@ -915,7 +936,6 @@ function renderChat() {
     const horaStr = hora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     const editadaTag = m.editadaEm ? '<span class="chat-msg-editada">(editada)</span>' : '';
     
-    // Avatar colorido
     const avatarCores = ['#ff4a4a', '#4a7dff', '#00c853', '#ffaa00', '#7c4dff', '#00bcd4'];
     let hash = 0; for (let j = 0; j < (m.autorEmail||'').length; j++) hash = m.autorEmail.charCodeAt(j) + ((hash << 5) - hash);
     const corAvatar = avatarCores[Math.abs(hash) % avatarCores.length];

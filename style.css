@@ -2363,3 +2363,31 @@ header, nav { flex-shrink: 0; }
     z-index: 100;
   }
 }
+
+/* ===== FEED DE EVENTOS / AVISOS ===== */
+.header-evento {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: linear-gradient(90deg, rgba(255,170,0,0.15), transparent);
+  border: 1px solid #ffaa00;
+  border-left: 4px solid #ffaa00;
+  padding: 6px 12px;
+  border-radius: 6px;
+  color: #ffaa00;
+  font-size: 0.85rem;
+  font-weight: bold;
+  max-width: 250px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 0 10px rgba(255, 170, 0, 0.2);
+  animation: pulsar 3s ease-in-out infinite;
+  cursor: pointer;
+  display: none; /* Começa escondido até ter evento */
+}
+
+@media (max-width: 700px) {
+  .header-evento { display: none !important; } /* Esconde no celular pra não quebrar o layout */
+}
