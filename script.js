@@ -572,23 +572,55 @@ document.getElementById('btnToggleCor').onclick = () => { const n = (localStorag
 function abrirMapa() {
   const bT = document.getElementById('btnGerenciarTipos'); if (bT) bT.style.display = isAdmin() ? '' : 'none';
   document.getElementById('mapa-container').classList.add('ativo');
+  
   if (!map) {
-    map = L.map('mapa', { crs: L.CRS.Simple, minZoom: -2, maxZoom: 3, attributionControl: false, zoomSnap: 0.25, maxBounds: MAP_BOUNDS, maxBoundsViscosity: 1.0 });
+    map = L.map('mapa', { 
+      crs: L.CRS.Simple, 
+      minZoom: -2, 
+      maxZoom: 3, 
+      attributionControl: false, 
+      zoomSnap: 0.25, 
+      maxBounds: MAP_BOUNDS, 
+      maxBoundsViscosity: 1.0,
+      preferCanvas: true // <-- ISSO DEIXA O MAPA ULTRA LEVE
+    });
+    
     camadaMapa = L.imageOverlay(CAMINHOS_MAPA[estiloAtual], MAP_BOUNDS).addTo(map);
     map.fitBounds(MAP_BOUNDS);
     marcadoresMapa.forEach(m => desenharMarcador(m));
     map.on('click', (e) => { if (modoAdicionar) { marcadorTempLatLng = e.latlng; abrirModalMarcador(); } });
   }
+  
   const c = localStorage.getItem('cor_marcadores') || 'com-cor';
   document.getElementById('btnToggleCor').textContent = c === 'com-cor' ? '🎨 Marcadores' : '✨ Só Emoji';
   atualizarLegenda();
-  setTimeout(() => { if (map) { map.invalidateSize(); if (marcadoresLeaflet.length > 0) { const v = marcadoresLeaflet.filter(m => tiposVisiveis.includes(m.tipoId)); if (v.length > 0) map.fitBounds(L.featureGroup(v.map(m => m.marker)).getBounds().pad(0.3)); } } }, 150);
+  
+  setTimeout(() => { 
+    if (map) { 
+      map.invalidateSize(); 
+      if (marcadoresLeaflet.length > 0) { 
+        const vis = marcadoresLeaflet.filter(m => tiposVisiveis.includes(m.tipoId)); 
+        if (vis.length > 0) {
+          const bounds = L.featureGroup(vis.map(m => m.marker)).getBounds();
+          map.fitBounds(bounds.pad(0.2), { maxZoom: 1 }); // Zoom inteligente que não buga
+        } 
+      } 
+    } 
+  }, 300);
 }
 
 function desenharMarcador(m) {
   if (isCliente()) { const u = uidAtual(); if (m.donoUid !== u) return; }
   const t = tiposPonto.find(x => x.id === m.tipoId) || tiposPonto[0], v = tiposVisiveis.includes(m.tipoId), s = localStorage.getItem('cor_marcadores') === 'sem-cor';
-  const icon = L.divIcon({ className: 'marcador-custom', html: `<div class="marcador-ponto ${s?'sem-cor':''}" style="${s?'':'background:'+t.cor+';'}">${t.emoji}</div>`, iconSize: [32,32], iconAnchor: [16,16], popupAnchor: [0,-16] });
+  
+  const icon = L.divIcon({ 
+    className: 'marcador-custom', 
+    html: `<div class="marcador-ponto ${s?'sem-cor':''}" style="${s?'':'background:'+t.cor+';'}">${t.emoji}</div>`, 
+    iconSize: [16, 16],     // <-- Ícone reduzido em 50%
+    iconAnchor: [8, 8],     // <-- Ponto de mira reduzido
+    popupAnchor: [0, -8]    // <-- Popup ajustado
+  });
+  
   const mk = L.marker([m.lat, m.lng], { icon });
   const tT = m.numeroFac ? `${t.emoji} ${t.nome} ${m.numeroFac}` : `${t.emoji} ${t.nome}`;
   let d = '';
