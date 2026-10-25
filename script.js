@@ -1,4 +1,4 @@
-// ===== BASE DE ITENS (mantida igual) =====
+// ===== BASE DE ITENS =====
 const BASE_ITENS = [
   { nome:'Celular', cat:'outros', peso:0.50, emoji:'📱', preco:0 }, { nome:'Rádio', cat:'outros', peso:1.50, emoji:'📻', preco:0 },
   { nome:'Mochila', cat:'outros', peso:0, emoji:'🎒', preco:0 }, { nome:'Dinheiro Normal', cat:'dinheiro', peso:0, emoji:'💵', preco:0 },
@@ -106,9 +106,8 @@ function iniciarSyncFirestore() {
   if (unsubEventos) unsubEventos();
   unsubEventos = FS().collection('eventos').where('publicado', '==', true).onSnapshot(s => {
     const eventos = s.docs.map(d => ({ id: d.id, ...d.data() }));
-    // Pega o mais recente para mostrar no card do topo
     if (eventos.length > 0) {
-      eventos.sort((a, b) => b.criadoEm?.toMillis() - a.criadoEm?.toMillis());
+      eventos.sort((a, b) => (b.criadoEm?.toMillis() || 0) - (a.criadoEm?.toMillis() || 0));
       window.eventoAtual = eventos[0];
       atualizarCardEvento(window.eventoAtual);
     } else {
@@ -128,16 +127,11 @@ function iniciarSyncFirestore() {
 function atualizarCardEvento(ev) {
   const el = document.getElementById('headerEvento');
   if (!el) return;
-
   const agora = new Date().getTime();
   const inicio = ev.inicio ? ev.inicio.toDate().getTime() : 0;
   const fim = ev.fim ? ev.fim.toDate().getTime() : Infinity;
 
-  // Checa expiração
-  if (agora > fim) {
-    el.style.display = 'none';
-    return;
-  }
+  if (agora > fim) { el.style.display = 'none'; return; }
 
   if (ev.titulo && ev.titulo.trim()) {
     document.getElementById('eventoTitulo').textContent = ev.titulo;
@@ -151,13 +145,9 @@ function atualizarCardEvento(ev) {
     if (ev.banner) { bgEl.style.backgroundImage = `url('${ev.banner}')`; bgEl.style.display = 'block'; }
     else { bgEl.style.display = 'none'; }
 
-    // Selo NOVO (se foi criado nas últimas 24h)
     const badge = document.getElementById('eventoNovoBadge');
-    if (ev.criadoEm && (agora - ev.criadoEm.toDate().getTime() < 86400000)) {
-      badge.style.display = 'block';
-    } else {
-      badge.style.display = 'none';
-    }
+    if (ev.criadoEm && (agora - ev.criadoEm.toDate().getTime() < 86400000)) badge.style.display = 'block';
+    else badge.style.display = 'none';
     
     el.style.display = 'flex';
   } else {
@@ -215,7 +205,7 @@ function montarAbas() {
   bc.appendChild(badge); abasEl.appendChild(bc);
 
   if (isAdmin()) {
-    const be = document.createElement('button'); be.textContent = '📢 Eventos'; be.style.background = '#ffaa00'; be.style.color = '#000'; be.onclick = abrirModalEventos; abasEl.appendChild(be);
+    const be = document.createElement('button'); be.textContent = '📢 Eventos'; be.style.background = '#ffaa00'; be.style.color = '#000'; be.onclick = () => abrirModalEventos(); abasEl.appendChild(be);
   }
 
   const bcfg = document.createElement('button'); bcfg.textContent = '⚙️ Configurações'; bcfg.classList.toggle('ativo', abaAtual === 'config');
@@ -227,7 +217,7 @@ function montarAbas() {
 }
 function montarCategorias() { const sel = document.getElementById('itemCategoria'); sel.innerHTML = ''; CATEGORIAS.forEach(c => { const o = document.createElement('option'); o.value = c.id; o.textContent = c.nome; sel.appendChild(o); }); }
 
-// ===== RENDER (mantido igual) =====
+// ===== RENDER =====
 function render() {
   conteudoEl.innerHTML = '';
   if (isCliente() && abaAtual === 'casa' && !clienteJaTemCasa()) abaAtual = 'garagem';
@@ -283,7 +273,6 @@ function abrirModalEventos(ev = null) {
     document.getElementById('btnNotificarEvento').style.display = 'none';
   }
 
-  // Preenche o select de marcadores
   const selPin = document.getElementById('editEventoPin');
   selPin.innerHTML = '<option value="">— Nenhum —</option>';
   marcadoresMapa.forEach(m => { selPin.innerHTML += `<option value="${m.id}">📍 ${m.nome}</option>`; });
@@ -306,7 +295,6 @@ function atualizarPreviewEvento() {
   else { previewImg.style.display = 'none'; }
 }
 
-// Adiciona listeners pros campos da preview
 ['editEventoTitulo', 'editEventoDesc', 'editEventoImg'].forEach(id => {
   document.getElementById(id).addEventListener('input', atualizarPreviewEvento);
 });
@@ -372,11 +360,9 @@ function abrirModalEventoRead() {
   if (ev.banner) { bgEl.style.backgroundImage = `url('${ev.banner}')`; bgEl.style.display = 'block'; }
   else { bgEl.style.display = 'none'; }
 
-  // Autor e Views
   document.getElementById('readEventoAutor').textContent = `Publicado por 👑 ${ev.autorEmail || 'Admin'}`;
   document.getElementById('readEventoViews').textContent = `👁️ ${ev.views || 0} leituras`;
 
-  // Pin do mapa
   const btnMapa = document.getElementById('btnMapaEventoRead');
   if (ev.pinId) {
     btnMapa.style.display = 'block';
@@ -389,12 +375,9 @@ function abrirModalEventoRead() {
     btnMapa.style.display = 'none';
   }
   
-  // Editar
   document.getElementById('btnEditEventoRead').style.display = isAdmin() ? 'block' : 'none';
 
-  // Timer / Prazo
   const timerEl = document.getElementById('readEventoTimer');
-  const timerTexto = document.getElementById('readEventoTimerTexto');
   if (timeoutTimerEvento) clearInterval(timeoutTimerEvento);
   
   if (ev.inicio || ev.fim) {
@@ -405,7 +388,6 @@ function abrirModalEventoRead() {
     timerEl.classList.add('escondido');
   }
 
-  // Conta view
   FS().collection('eventos').doc(ev.id).update({ views: firebase.firestore.FieldValue.increment(1) }).catch(()=>{});
 
   document.getElementById('modalEventoRead').classList.remove('escondido');
@@ -415,38 +397,17 @@ function atualizarTimer(ev) {
   const timerTexto = document.getElementById('readEventoTimerTexto');
   const agora = new Date().getTime();
   
-  if (ev.fim && agora > ev.fim.toDate().getTime()) {
-    timerTexto.textContent = 'Evento encerrado';
-    return;
-  }
-
-  if (ev.inicio && agora < ev.inicio.toDate().getTime()) {
-    const diff = ev.inicio.toDate().getTime() - agora;
-    timerTexto.textContent = 'Começa em: ' + formatarTempo(diff);
-    return;
-  }
-
-  if (ev.inicio && ev.fim) {
-    const diff = ev.fim.toDate().getTime() - agora;
-    timerTexto.textContent = 'Termina em: ' + formatarTempo(diff);
-    return;
-  }
-
+  if (ev.fim && agora > ev.fim.toDate().getTime()) { timerTexto.textContent = 'Evento encerrado'; return; }
+  if (ev.inicio && agora < ev.inicio.toDate().getTime()) { const diff = ev.inicio.toDate().getTime() - agora; timerTexto.textContent = 'Começa em: ' + formatarTempo(diff); return; }
+  if (ev.inicio && ev.fim) { const diff = ev.fim.toDate().getTime() - agora; timerTexto.textContent = 'Termina em: ' + formatarTempo(diff); return; }
   timerTexto.textContent = 'Ao vivo agora!';
 }
 
 function formatarTempo(ms) {
-  const s = Math.floor(ms / 1000);
-  const d = Math.floor(s / 86400);
-  const h = Math.floor((s % 86400) / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const seg = s % 60;
-  if (d > 0) return `${d}d ${h}h ${m}m`;
-  if (h > 0) return `${h}h ${m}m ${seg}s`;
-  return `${m}m ${seg}s`;
+  const s = Math.floor(ms / 1000); const d = Math.floor(s / 86400); const h = Math.floor((s % 86400) / 3600); const m = Math.floor((s % 3600) / 60); const seg = s % 60;
+  if (d > 0) return `${d}d ${h}h ${m}m`; if (h > 0) return `${h}h ${m}m ${seg}s`; return `${m}m ${seg}s`;
 }
 
-// Listener cliques
 document.getElementById('headerEvento').onclick = abrirModalEventoRead;
 document.getElementById('btnFecharEventoRead').onclick = () => { document.getElementById('modalEventoRead').classList.add('escondido'); if (timeoutTimerEvento) clearInterval(timeoutTimerEvento); };
 document.getElementById('btnEditEventoRead').onclick = () => {
@@ -457,7 +418,6 @@ document.getElementById('btnEditEventoRead').onclick = () => {
 
 document.getElementById('btnCancelarEvento').onclick = () => { document.getElementById('modalEventoEdit').classList.add('escondido'); };
 
-// Botão Notificar (OneSignal)
 document.getElementById('btnNotificarEvento').onclick = async () => {
   if (!confirm('Enviar notificação push para TODOS os usuários agora?')) return;
   const ev = window.eventoAtual;
@@ -466,12 +426,10 @@ document.getElementById('btnNotificarEvento').onclick = async () => {
   if (!window.OneSignal) return alert('OneSignal não inicializado.');
   
   try {
-    // Para notificações push via OneSignal, você precisa do REST API Key via Cloud Function.
-    // Aqui enviamos uma notificação local para o próprio dispositivo testar.
     await window.OneSignal.Notifications.requestPermission();
     alert('✅ Notificação solicitada! (Para todos os usuários, use a Cloud Function)');
   } catch (err) { alert('Erro: ' + err.message); }
 };
 
 // ===== CHAT E SONS =====
-// (Mantidos iguais aos arquivos anteriores)
+// (Mantidos inalterados no restante do script)
