@@ -104,16 +104,9 @@ function iniciarSyncFirestore() {
 
   // Sincronização de Eventos via Coleção
   if (unsubEventos) unsubEventos();
-  unsubEventos = FS().collection('eventos').where('publicado', '==', true).onSnapshot(s => {
-    const eventos = s.docs.map(d => ({ id: d.id, ...d.data() }));
-    if (eventos.length > 0) {
-      eventos.sort((a, b) => (b.criadoEm?.toMillis() || 0) - (a.criadoEm?.toMillis() || 0));
-      window.eventoAtual = eventos[0];
-      atualizarCardEvento(window.eventoAtual);
-    } else {
-      window.eventoAtual = null;
-      document.getElementById('headerEvento').style.display = 'none';
-    }
+  unsubEventos = FS().collection('eventos').onSnapshot(s => {
+    todosEventos = s.docs.map(d => ({ id: d.id, ...d.data() }));
+    atualizarCarrossel();
   });
 
   if (admin) {
@@ -121,37 +114,6 @@ function iniciarSyncFirestore() {
     unsubs.usuariosChat = FS().collection('usuarios').onSnapshot(s => { window.todosUsuarios = s.docs.map(d => ({ id: d.id, ...d.data() })); });
   } else {
     window.todosUsuarios = [{ uid: uid, email: firebase.auth().currentUser.email, tipo: window.tipoUsuario }];
-  }
-}
-
-function atualizarCardEvento(ev) {
-  const el = document.getElementById('headerEvento');
-  if (!el) return;
-  const agora = new Date().getTime();
-  const inicio = ev.inicio ? ev.inicio.toDate().getTime() : 0;
-  const fim = ev.fim ? ev.fim.toDate().getTime() : Infinity;
-
-  if (agora > fim) { el.style.display = 'none'; return; }
-
-  if (ev.titulo && ev.titulo.trim()) {
-    document.getElementById('eventoTitulo').textContent = ev.titulo;
-    document.getElementById('eventoDesc').textContent = ev.descricao || 'Clique para saber mais';
-    
-    const imgEl = document.getElementById('eventoImg');
-    if (ev.imagem) { imgEl.src = ev.imagem; imgEl.style.display = 'block'; } 
-    else { imgEl.style.display = 'none'; }
-
-    const bgEl = document.getElementById('eventoBg');
-    if (ev.banner) { bgEl.style.backgroundImage = `url('${ev.banner}')`; bgEl.style.display = 'block'; }
-    else { bgEl.style.display = 'none'; }
-
-    const badge = document.getElementById('eventoNovoBadge');
-    if (ev.criadoEm && (agora - ev.criadoEm.toDate().getTime() < 86400000)) badge.style.display = 'block';
-    else badge.style.display = 'none';
-    
-    el.style.display = 'flex';
-  } else {
-    el.style.display = 'none';
   }
 }
 
@@ -205,7 +167,7 @@ function montarAbas() {
   bc.appendChild(badge); abasEl.appendChild(bc);
 
   if (isAdmin()) {
-    const be = document.createElement('button'); be.textContent = '📢 Eventos'; be.style.background = '#ffaa00'; be.style.color = '#000'; be.onclick = () => abrirModalEventos(); abasEl.appendChild(be);
+    const be = document.createElement('button'); be.textContent = '📢 Eventos'; be.style.background = '#ffaa00'; be.style.color = '#000'; be.onclick = abrirPainelEventos; abasEl.appendChild(be);
   }
 
   const bcfg = document.createElement('button'); bcfg.textContent = '⚙️ Configurações'; bcfg.classList.toggle('ativo', abaAtual === 'config');
@@ -520,7 +482,7 @@ async function salvarCap() {
   fecharModalCap();
 }
 
-// ===== CONFIGURAÇÕES, MIGRAR, MAPA (INALTERADOS) =====
+// ===== CONFIGURAÇÕES, MIGRAR, MAPA =====
 function renderConfiguracoes() {
   const itensL = itens.length, veicsL = veiculos.length, marcsL = marcadoresMapa.length, tiposL = tiposPonto.length;
   const temaAt = localStorage.getItem('tema_rp') || 'escuro', corAt = localStorage.getItem('cor_marcadores') !== 'sem-cor';
@@ -598,7 +560,6 @@ async function migrarLocalParaFirestore() {
   await b.commit(); alert('✅ Migrado!');
 }
 
-// MAPA
 const ESTILOS_MAPA = ['styleAtlas', 'styleGrid'];
 const CAMINHOS_MAPA = { styleAtlas: 'mapStyles/styleAtlas/map.png', styleGrid: 'mapStyles/styleGrid/map.png' };
 const MAP_BOUNDS = [[0, 0], [-2000, 2000]];
@@ -677,7 +638,6 @@ function toggleTipoVisivel(tipoId, v) {
 document.getElementById('btnMarcarTodos').onclick = () => { tiposVisiveis = tiposPonto.map(t => t.id); localStorage.setItem('tipos_visiveis_rp', JSON.stringify(tiposVisiveis)); atualizarLegenda(); marcadoresLeaflet.forEach(m => { if (!map.hasLayer(m.marker)) m.marker.addTo(map); }); };
 document.getElementById('btnDesmarcarTodos').onclick = () => { tiposVisiveis = []; localStorage.setItem('tipos_visiveis_rp', JSON.stringify(tiposVisiveis)); atualizarLegenda(); marcadoresLeaflet.forEach(m => { if (map.hasLayer(m.marker)) map.removeLayer(m.marker); }); };
 
-// BUSCA MAPA
 const bME = document.getElementById('buscaMapa'), bRE = document.getElementById('buscaResultados');
 bME.oninput = () => {
   const t = bME.value.trim().toLowerCase();
@@ -706,7 +666,6 @@ function irParaMarcador(id) {
 }
 document.addEventListener('click', (e) => { if (!e.target.closest('#mapa-busca')) bRE.classList.add('escondido'); });
 
-// MODAL MARCADOR
 function abrirModalMarcador(mEditar = null) {
   editandoMarcId = mEditar ? mEditar.id : null; fotoMarcTemp = mEditar ? (mEditar.foto || null) : null;
   document.getElementById('modalMarcadorTitulo').textContent = mEditar ? 'Editar ponto' : 'Novo ponto no mapa';
@@ -758,7 +717,6 @@ async function removerMarcador(id) {
 }
 function abrirBauDoMapa(rI, b) { document.getElementById('mapa-container').classList.remove('ativo'); if (b === 'casa' || b === 'moto') { abaAtual = b; veiculoAberto = null; } else { abaAtual = 'garagem'; veiculoAberto = rI; } montarAbas(); render(); }
 
-// GERENCIAR TIPOS
 document.getElementById('btnGerenciarTipos').onclick = () => { if (!isAdmin()) return; renderListaTipos(); document.getElementById('modalGerenciarTipos').classList.remove('escondido'); };
 document.getElementById('btnFecharGerenciar').onclick = () => { document.getElementById('modalGerenciarTipos').classList.add('escondido'); };
 document.getElementById('btnNovoTipo').onclick = () => { if (!isAdmin()) return; editandoTipoId = null; document.getElementById('modalTipoTitulo').textContent = 'Novo tipo'; document.getElementById('tipoNome').value = ''; document.getElementById('tipoEmoji').value = ''; document.getElementById('tipoCor').value = '#4a7dff'; document.getElementById('tipoCategoria').value = ''; document.getElementById('modalTipo').classList.remove('escondido'); };
@@ -783,11 +741,70 @@ document.getElementById('btnSalvarTipo').onclick = async () => {
   document.getElementById('modalTipo').classList.add('escondido'); renderListaTipos();
 };
 
-// EVENTOS
+// ===== EVENTOS =====
 let eventoEditandoId = null;
 let timeoutTimerEvento = null;
+let todosEventos = [];
+let indexCarrossel = 0;
+let intervalCarrossel = null;
 
-function abrirModalEventos(ev = null) {
+function abrirPainelEventos() {
+  if (!isAdmin()) return;
+  document.getElementById('modalListaEventos').classList.remove('escondido');
+  renderListaEventosPainel();
+}
+
+function renderListaEventosPainel() {
+  const l = document.getElementById('listaEventosPainel');
+  l.innerHTML = '';
+  
+  if (todosEventos.length === 0) {
+    l.innerHTML = '<div style="text-align:center;padding:20px;color:var(--texto-sec);">Nenhum evento criado ainda.</div>';
+    return;
+  }
+
+  const ordenados = [...todosEventos].sort((a, b) => (b.criadoEm?.toMillis() || 0) - (a.criadoEm?.toMillis() || 0));
+
+  ordenados.forEach(ev => {
+    const div = document.createElement('div'); div.className = 'evento-lista-item';
+    
+    const imgHtml = ev.imagem ? `<img src="${ev.imagem}">` : `<div style="width:40px;height:40px;background:#000;border-radius:6px;display:flex;align-items:center;justify-content:center;">📢</div>`;
+    const badgeHtml = ev.publicado ? `<span class="badge pub">Publicado</span>` : `<span class="badge rascunho">Rascunho</span>`;
+
+    div.innerHTML = `
+      ${imgHtml}
+      <div class="info">
+        <strong>${ev.titulo}</strong>
+        <span>${ev.views || 0} leituras • ${badgeHtml}</span>
+      </div>
+      <div class="acoes">
+        <button data-acao="editar" title="Editar">✏️</button>
+        <button data-acao="excluir" title="Excluir">🗑️</button>
+      </div>
+    `;
+
+    div.querySelector('[data-acao="editar"]').onclick = () => {
+      document.getElementById('modalListaEventos').classList.add('escondido');
+      abrirModalEdicaoEvento(ev);
+    };
+    div.querySelector('[data-acao="excluir"]').onclick = async () => {
+      if (!confirm(`Excluir o evento "${ev.titulo}"?`)) return;
+      await FS().collection('eventos').doc(ev.id).delete();
+    };
+
+    l.appendChild(div);
+  });
+}
+
+document.getElementById('btnNovoEventoPainel').onclick = () => {
+  document.getElementById('modalListaEventos').classList.add('escondido');
+  abrirModalEdicaoEvento(null);
+};
+document.getElementById('btnFecharListaEventos').onclick = () => {
+  document.getElementById('modalListaEventos').classList.add('escondido');
+};
+
+function abrirModalEdicaoEvento(ev = null) {
   if (!isAdmin()) return;
   const modal = document.getElementById('modalEventoEdit');
   
@@ -886,8 +903,7 @@ document.getElementById('btnSalvarEvento').onclick = async () => {
   document.getElementById('modalEventoEdit').classList.add('escondido');
 };
 
-function abrirModalEventoRead() {
-  const ev = window.eventoAtual;
+function abrirModalEventoRead(ev) {
   if (!ev) return;
   
   document.getElementById('readEventoTitulo').textContent = ev.titulo;
@@ -912,9 +928,7 @@ function abrirModalEventoRead() {
       abrirMapa();
       setTimeout(() => irParaMarcador(ev.pinId), 500);
     };
-  } else {
-    btnMapa.style.display = 'none';
-  }
+  } else { btnMapa.style.display = 'none'; }
   
   document.getElementById('btnEditEventoRead').style.display = isAdmin() ? 'block' : 'none';
 
@@ -949,19 +963,30 @@ function formatarTempo(ms) {
   if (d > 0) return `${d}d ${h}h ${m}m`; if (h > 0) return `${h}h ${m}m ${seg}s`; return `${m}m ${seg}s`;
 }
 
-document.getElementById('headerEvento').onclick = abrirModalEventoRead;
+document.getElementById('headerEvento').onclick = () => {
+  if (!todosEventos.length) return;
+  const ativos = todosEventos.filter(ev => ev.publicado && (!ev.fim || new Date().getTime() < ev.fim.toDate().getTime()));
+  if (ativos.length > 0) {
+    const ev = ativos[indexCarrossel % ativos.length];
+    abrirModalEventoRead(ev);
+  }
+};
+
 document.getElementById('btnFecharEventoRead').onclick = () => { document.getElementById('modalEventoRead').classList.add('escondido'); if (timeoutTimerEvento) clearInterval(timeoutTimerEvento); };
 document.getElementById('btnEditEventoRead').onclick = () => {
   document.getElementById('modalEventoRead').classList.add('escondido');
   if (timeoutTimerEvento) clearInterval(timeoutTimerEvento);
-  abrirModalEventos(window.eventoAtual);
+  const ativos = todosEventos.filter(ev => ev.publicado && (!ev.fim || new Date().getTime() < ev.fim.toDate().getTime()));
+  const ev = ativos[indexCarrossel % ativos.length];
+  abrirModalEdicaoEvento(ev);
 };
 
 document.getElementById('btnCancelarEvento').onclick = () => { document.getElementById('modalEventoEdit').classList.add('escondido'); };
 
 document.getElementById('btnNotificarEvento').onclick = async () => {
   if (!confirm('Enviar notificação push para TODOS os usuários agora?')) return;
-  const ev = window.eventoAtual;
+  const ativos = todosEventos.filter(ev => ev.publicado && (!ev.fim || new Date().getTime() < ev.fim.toDate().getTime()));
+  const ev = ativos[indexCarrossel % ativos.length];
   if (!ev) return alert('Salve o evento primeiro.');
   if (!window.OneSignal) return alert('OneSignal não inicializado.');
   try {
@@ -969,6 +994,68 @@ document.getElementById('btnNotificarEvento').onclick = async () => {
     alert('✅ Notificação solicitada!');
   } catch (err) { alert('Erro: ' + err.message); }
 };
+
+function atualizarCarrossel() {
+  const agora = new Date().getTime();
+  const ativos = todosEventos.filter(ev => {
+    if (!ev.publicado) return false;
+    if (ev.fim && agora > ev.fim.toDate().getTime()) return false;
+    return true;
+  });
+
+  const el = document.getElementById('headerEvento');
+  const controles = document.getElementById('eventoCarrossel');
+  
+  if (intervalCarrossel) clearInterval(intervalCarrossel);
+
+  if (ativos.length === 0) {
+    el.style.display = 'none';
+    return;
+  }
+
+  el.style.display = 'flex';
+
+  const renderEventoAtual = () => {
+    if (indexCarrossel >= ativos.length) indexCarrossel = 0;
+    const ev = ativos[indexCarrossel];
+    
+    document.getElementById('eventoTitulo').textContent = ev.titulo;
+    document.getElementById('eventoDesc').textContent = ev.descricao || 'Clique para saber mais';
+    
+    const imgEl = document.getElementById('eventoImg');
+    if (ev.imagem) { imgEl.src = ev.imagem; imgEl.style.display = 'block'; } 
+    else { imgEl.style.display = 'none'; }
+
+    const bgEl = document.getElementById('eventoBg');
+    if (ev.banner) { bgEl.style.backgroundImage = `url('${ev.banner}')`; bgEl.style.display = 'block'; }
+    else { bgEl.style.display = 'none'; }
+
+    const badge = document.getElementById('eventoNovoBadge');
+    if (ev.criadoEm && (agora - ev.criadoEm.toDate().getTime() < 86400000)) badge.style.display = 'block';
+    else badge.style.display = 'none';
+
+    if (ativos.length > 1) {
+      controles.style.display = 'flex';
+      controles.innerHTML = '';
+      ativos.forEach((_, i) => {
+        const dot = document.createElement('span');
+        if (i === indexCarrossel) dot.className = 'ativo';
+        controles.appendChild(dot);
+      });
+    } else {
+      controles.style.display = 'none';
+    }
+  };
+
+  renderEventoAtual();
+
+  if (ativos.length > 1) {
+    intervalCarrossel = setInterval(() => {
+      indexCarrossel++;
+      renderEventoAtual();
+    }, 6000);
+  }
+}
 
 // ===== CHAT GLOBAL =====
 let unsubChat = null, chatMsgs = [], ultimoEnvioEm = 0, editandoMsgId = null, msgRespondendo = null;
@@ -1275,6 +1362,7 @@ document.getElementById('modalTipo').onclick = (e) => { if (e.target.id === 'mod
 document.getElementById('modalGerenciarTipos').onclick = (e) => { if (e.target.id === 'modalGerenciarTipos') document.getElementById('modalGerenciarTipos').classList.add('escondido'); };
 document.getElementById('modalEventoEdit').onclick = (e) => { if (e.target.id === 'modalEventoEdit') document.getElementById('modalEventoEdit').classList.add('escondido'); };
 document.getElementById('modalEventoRead').onclick = (e) => { if (e.target.id === 'modalEventoRead') document.getElementById('modalEventoRead').classList.add('escondido'); };
+document.getElementById('modalListaEventos').onclick = (e) => { if (e.target.id === 'modalListaEventos') document.getElementById('modalListaEventos').classList.add('escondido'); };
 
 // ===== SONS =====
 const musicaFundo = new Audio('sounds/menu.mp3'); musicaFundo.loop = true;
