@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Inventário RP</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="style.css?v=10" />
+<link rel="stylesheet" href="style.css?v=11" />
 </head>
 <body>
 
@@ -15,17 +15,12 @@
     <div class="login-logo">📦</div>
     <h1>Inventário RP</h1>
     <p class="login-subtitulo">Fluxo GHOSTS</p>
-
     <label>Email</label>
     <input type="email" id="loginEmail" placeholder="seu@email.com" autocomplete="email" />
-
     <label>Senha</label>
     <input type="password" id="loginSenha" placeholder="••••••••" autocomplete="current-password" />
-
     <div id="loginErro" class="login-erro escondido"></div>
-
     <button id="btnEntrar" class="btn-login">Entrar</button>
-
     <div class="login-links">
       <a href="#" id="btnEsqueciSenha">Esqueci a senha</a>
     </div>
@@ -44,6 +39,7 @@
         <div id="eventoTitulo" class="titulo-evento"></div>
         <div id="eventoDesc" class="desc-evento"></div>
       </div>
+      <span id="eventoNovoBadge" class="evento-novo-badge" style="display:none;">NOVO</span>
     </div>
     
     <h1 id="tituloEaster">📦 Inventário RP</h1>
@@ -55,38 +51,25 @@
 
   <nav id="abas"></nav>
 
-  <!-- AREA PRINCIPAL (conteúdo + sidebar do chat) -->
   <div id="areaConteudo">
     <main id="conteudo"></main>
 
     <!-- SIDEBAR CHAT -->
     <div id="chatSidebar" class="escondido">
-      <div class="chat-header">
-        <h2>💬 Chat Global</h2>
-        <button id="btnFecharChat">✕</button>
-      </div>
-      
+      <div class="chat-header"><h2>💬 Chat Global</h2><button id="btnFecharChat">✕</button></div>
       <div style="padding: 4px 8px; background:var(--bg-lista); text-align:center;">
         <button id="btnCarregarMais" style="background:transparent; border:none; color:var(--azul); cursor:pointer; font-size:0.7rem; padding:4px;">Carregar mais antigas ⬆️</button>
       </div>
-
-      <div id="chatMensagens" class="chat-mensagens">
-        <div class="chat-vazio">Nenhuma mensagem ainda.</div>
-      </div>
-
+      <div id="chatMensagens" class="chat-mensagens"><div class="chat-vazio">Nenhuma mensagem ainda.</div></div>
       <button id="btnNovasMsg" class="btn-novas-msg escondido">⬇️ Novas mensagens</button>
-
       <div id="chatReplyBar" class="chat-reply-bar escondido">
         <span id="chatReplyTexto">Respondendo...</span>
         <button id="btnCancelarReply">✕</button>
       </div>
-
       <div class="chat-input-area">
         <div id="emojiPicker" class="emoji-picker escondido"></div>
         <div id="mentionList" class="mention-list escondido"></div>
-        
         <textarea id="chatInput" placeholder="Digite uma mensagem..." rows="1"></textarea>
-        
         <div class="chat-input-acoes">
           <button id="btnEmoji" title="Emojis">😀</button>
           <button id="chatEnviar" class="enviar" title="Enviar (Enter)">📤</button>
@@ -95,34 +78,39 @@
     </div>
   </div>
 
-  <!-- ===== MODAL EVENTO: LEITURA (Para todo mundo ver) ===== -->
+  <!-- ===== MODAL EVENTO: LEITURA ===== -->
   <div id="modalEventoRead" class="modal escondido">
     <div class="modal-conteudo">
       <div id="readEventoBanner" class="evento-read-banner"></div>
-      
       <div class="evento-read-content">
-        <!-- Imagem grande centralizada no topo -->
         <img id="readEventoImg" class="evento-read-icone" src="" style="display:none;">
-        
-        <!-- Título -->
         <div id="readEventoTitulo" class="evento-read-titulo"></div>
         
-        <!-- Descrição em baixo -->
+        <div id="readEventoTimer" class="evento-read-timer escondido">
+          ⏰ <span id="readEventoTimerTexto">00:00:00</span>
+        </div>
+
         <div id="readEventoDesc" class="evento-read-desc"></div>
         
-        <div class="botoes" style="margin-top:20px; justify-content: center; width: 100%;">
+        <div class="evento-read-footer">
+          <span id="readEventoAutor"></span>
+          <span id="readEventoViews"></span>
+        </div>
+
+        <div class="botoes" style="margin-top:20px; justify-content: center; width: 100%; flex-wrap: wrap;">
           <button id="btnFecharEventoRead" class="secundario">Fechar</button>
-          <button id="btnEditEventoRead" style="background:#ffaa00; color:#000; display:none;">✏️ Editar Anúncio</button>
+          <button id="btnMapaEventoRead" class="secundario" style="display:none;">📍 Ver no Mapa</button>
+          <button id="btnEditEventoRead" style="background:#ffaa00; color:#000; display:none;">✏️ Editar</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ===== MODAL EVENTO: EDIÇÃO (Só Admin) ===== -->
+  <!-- ===== MODAL EVENTO: EDIÇÃO ===== -->
   <div id="modalEventoEdit" class="modal escondido">
     <div class="modal-conteudo">
       <h2>📢 Configurar Feed de Evento</h2>
-      <p style="font-size:0.8rem; color:var(--texto-sec); margin-bottom:12px;">Deixe em branco e salve para apagar o evento da tela.</p>
+      <p style="font-size:0.8rem; color:var(--texto-sec); margin-bottom:12px;">Deixe o título em branco e salve para apagar o evento da tela.</p>
       
       <label>Link do Banner de Fundo (estilo Faixa Discord)</label>
       <input type="text" id="editEventoBanner" placeholder="Cole o link da imagem da faixa aqui" />
@@ -130,14 +118,47 @@
       <label>Título do Evento</label>
       <input type="text" id="editEventoTitulo" placeholder="Ex: Farm Valendo Prêmio!" />
       
-      <label>Descrição Curta / Completa</label>
+      <label>Descrição Completa</label>
       <textarea id="editEventoDesc" placeholder="Ex: Quem farmar mais leva 50k..." rows="3" style="width:100%;padding:10px;background:var(--bg-3);border:1px solid var(--borda);border-radius:8px;color:var(--texto);font-family:inherit;resize:vertical;"></textarea>
 
       <label>Link da Imagem / GIF do Ícone (opcional)</label>
       <input type="text" id="editEventoImg" placeholder="Cole o link .gif ou .png aqui" />
-      
-      <div class="botoes">
+
+      <div style="display:flex; gap:8px; margin-top:8px;">
+        <div style="flex:1;">
+          <label>📅 Início (opcional)</label>
+          <input type="datetime-local" id="editEventoInicio" />
+        </div>
+        <div style="flex:1;">
+          <label>⏳ Fim (opcional)</label>
+          <input type="datetime-local" id="editEventoFim" />
+        </div>
+      </div>
+
+      <label>📍 Marcador do Mapa (opcional)</label>
+      <select id="editEventoPin">
+        <option value="">— Nenhum —</option>
+      </select>
+
+      <label style="display:flex; align-items:center; gap:8px; margin-top:12px; cursor:pointer;">
+        <input type="checkbox" id="editEventoPublicado" checked style="width:auto; cursor:pointer;" />
+        <span>Publicar agora (desmarcar = rascunho)</span>
+      </label>
+
+      <h3 style="margin-top:20px; font-size:0.9rem; color:var(--texto-sec);">👁️ Prévia do Card:</h3>
+      <div class="evento-preview">
+        <div class="evento-preview-card">
+          <img id="previewCardImg" src="" style="display:none;">
+          <div class="evento-preview-info">
+            <div id="previewCardTitulo" class="evento-preview-titulo">Título do Evento</div>
+            <div id="previewCardDesc" class="evento-preview-desc">Descrição aparecerá aqui...</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="botoes" style="flex-wrap: wrap;">
         <button id="btnCancelarEvento" class="secundario">Cancelar</button>
+        <button id="btnNotificarEvento" class="secundario" style="display:none; background:#4a7dff; color:#fff;">📣 Notificar Todos</button>
         <button id="btnSalvarEvento" style="background:#ffaa00; color:#000;">Salvar Evento</button>
       </div>
     </div>
@@ -185,12 +206,9 @@
       <input type="text" id="veicNome" placeholder="Ex: 24Model3" />
       <label>Tipo</label>
       <select id="veicTipo">
-        <option value="carro">🚗 Carro</option>
-        <option value="moto">🏍️ Moto</option>
-        <option value="helicoptero">🚁 Helicóptero</option>
-        <option value="aviao">✈️ Avião</option>
-        <option value="barco">🚤 Barco</option>
-        <option value="outro">📦 Outro</option>
+        <option value="carro">🚗 Carro</option><option value="moto">🏍️ Moto</option>
+        <option value="helicoptero">🚁 Helicóptero</option><option value="aviao">✈️ Avião</option>
+        <option value="barco">🚤 Barco</option><option value="outro">📦 Outro</option>
       </select>
       <label>Vaga (opcional)</label>
       <input type="text" id="veicVaga" placeholder="Ex: Vaga 01" />
@@ -248,10 +266,8 @@
       <label>🎯 Produção (opcional)</label>
       <select id="marcProducao">
         <option value="">— Nenhuma —</option>
-        <option value="Armas">🔫 Armas</option>
-        <option value="Munições">💥 Munições</option>
-        <option value="Drogas">💊 Drogas</option>
-        <option value="Muambas">📦 Muambas</option>
+        <option value="Armas">🔫 Armas</option><option value="Munições">💥 Munições</option>
+        <option value="Drogas">💊 Drogas</option><option value="Muambas">📦 Muambas</option>
         <option value="Lavagem">💰 Lavagem</option>
       </select>
       <label>📞 Número / Telefone (opcional)</label>
@@ -264,9 +280,7 @@
       <input type="file" id="marcFoto" accept="image/*" />
       <div class="preview" id="previewMarc"></div>
       <label>📦 Vincular a um baú (opcional)</label>
-      <select id="marcRef">
-        <option value="">— Nenhum —</option>
-      </select>
+      <select id="marcRef"><option value="">— Nenhum —</option></select>
       <div class="botoes">
         <button id="btnCancelarMarc" class="secundario">Cancelar</button>
         <button id="btnSalvarMarc">Salvar</button>
@@ -309,9 +323,7 @@
       <h2>🏷️ Tipos de ponto</h2>
       <button id="btnNovoTipo" style="width:100%;padding:12px;background:#4a7dff;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:bold;margin-bottom:12px;">➕ Novo tipo</button>
       <div id="listaTipos" style="max-height:400px;overflow-y:auto;"></div>
-      <div class="botoes">
-        <button id="btnFecharGerenciar" class="secundario">Fechar</button>
-      </div>
+      <div class="botoes"><button id="btnFecharGerenciar" class="secundario">Fechar</button></div>
     </div>
   </div>
 
@@ -319,27 +331,17 @@
   <div id="modalAdmin" class="modal escondido">
     <div class="modal-conteudo">
       <h2>👑 Painel de Admin</h2>
-
       <h3 style="margin-top:16px;color:var(--azul);">➕ Criar nova conta</h3>
       <label>Email</label>
       <input type="email" id="adminEmail" placeholder="cliente@email.com" />
       <label>Senha</label>
       <input type="password" id="adminSenha" placeholder="Mínimo 6 caracteres" />
       <label>Tipo</label>
-      <select id="adminTipo">
-        <option value="cliente">🧑 Cliente</option>
-        <option value="admin">👑 Admin</option>
-      </select>
-      <div class="botoes">
-        <button id="btnCriarConta" style="background:var(--azul);color:white;">➕ Criar conta</button>
-      </div>
-
+      <select id="adminTipo"><option value="cliente">🧑 Cliente</option><option value="admin">👑 Admin</option></select>
+      <div class="botoes"><button id="btnCriarConta" style="background:var(--azul);color:white;">➕ Criar conta</button></div>
       <h3 style="margin-top:24px;color:var(--azul);">👥 Usuários cadastrados</h3>
       <div id="listaUsuarios" style="max-height:300px;overflow-y:auto;margin-top:8px;"></div>
-
-      <div class="botoes">
-        <button id="btnFecharAdmin" class="secundario">Fechar</button>
-      </div>
+      <div class="botoes"><button id="btnFecharAdmin" class="secundario">Fechar</button></div>
     </div>
   </div>
 
@@ -347,11 +349,9 @@
 
 <!-- ===== SCRIPTS ===== -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 
 <script>
@@ -375,74 +375,46 @@
     const senha = document.getElementById('loginSenha').value;
     const erroEl = document.getElementById('loginErro');
     erroEl.classList.add('escondido');
-
-    if (!email || !senha) {
-      erroEl.textContent = '❌ Preencha email e senha';
-      erroEl.classList.remove('escondido');
-      return;
-    }
-
-    try {
-      await firebase.auth().signInWithEmailAndPassword(email, senha);
-    } catch (err) {
+    if (!email || !senha) { erroEl.textContent = '❌ Preencha email e senha'; erroEl.classList.remove('escondido'); return; }
+    try { await firebase.auth().signInWithEmailAndPassword(email, senha); }
+    catch (err) {
       let msg = '❌ Erro ao entrar';
       if (err.code === 'auth/user-not-found') msg = '❌ Email não cadastrado';
       else if (err.code === 'auth/wrong-password') msg = '❌ Senha incorreta';
       else if (err.code === 'auth/invalid-email') msg = '❌ Email inválido';
       else if (err.code === 'auth/too-many-requests') msg = '❌ Muitas tentativas.';
       else msg = '❌ ' + err.message;
-      erroEl.textContent = msg;
-      erroEl.classList.remove('escondido');
+      erroEl.textContent = msg; erroEl.classList.remove('escondido');
     }
   };
 
-  document.getElementById('loginSenha').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') document.getElementById('btnEntrar').click();
-  });
+  document.getElementById('loginSenha').addEventListener('keypress', (e) => { if (e.key === 'Enter') document.getElementById('btnEntrar').click(); });
 
   document.getElementById('btnEsqueciSenha').onclick = async (e) => {
     e.preventDefault();
     const email = document.getElementById('loginEmail').value.trim();
     const erroEl = document.getElementById('loginErro');
-    if (!email) {
-      erroEl.textContent = '❌ Digite seu email primeiro';
-      erroEl.classList.remove('escondido');
-      return;
-    }
+    if (!email) { erroEl.textContent = '❌ Digite seu email primeiro'; erroEl.classList.remove('escondido'); return; }
     try {
       await firebase.auth().sendPasswordResetEmail(email);
       erroEl.textContent = '✅ Email de recuperação enviado!';
-      erroEl.style.color = '#00c853';
-      erroEl.classList.remove('escondido');
+      erroEl.style.color = '#00c853'; erroEl.classList.remove('escondido');
       setTimeout(() => { erroEl.classList.add('escondido'); erroEl.style.color = ''; }, 5000);
-    } catch (err) {
-      erroEl.textContent = '❌ ' + err.message;
-      erroEl.classList.remove('escondido');
-    }
+    } catch (err) { erroEl.textContent = '❌ ' + err.message; erroEl.classList.remove('escondido'); }
   };
 
   firebase.auth().onAuthStateChanged(async (user) => {
     if (user) {
       document.getElementById('telaLogin').classList.add('escondido');
       document.getElementById('appPrincipal').classList.add('visivel');
-
       try {
         const doc = await firebase.firestore().collection('usuarios').doc(user.uid).get();
-        if (doc.exists) {
-          window.tipoUsuario = doc.data().tipo || 'cliente';
-          window.ultimaLeituraChatDoc = doc.data().ultimaLeituraChat || null;
-        } else {
-          await firebase.firestore().collection('usuarios').doc(user.uid).set({
-            email: user.email,
-            tipo: 'cliente',
-            criadoEm: firebase.firestore.FieldValue.serverTimestamp()
-          });
+        if (doc.exists) { window.tipoUsuario = doc.data().tipo || 'cliente'; window.ultimaLeituraChatDoc = doc.data().ultimaLeituraChat || null; }
+        else {
+          await firebase.firestore().collection('usuarios').doc(user.uid).set({ email: user.email, tipo: 'cliente', criadoEm: firebase.firestore.FieldValue.serverTimestamp() });
           window.tipoUsuario = 'cliente';
         }
-      } catch (e) {
-        console.log('Erro ao buscar tipo:', e);
-        window.tipoUsuario = 'cliente';
-      }
+      } catch (e) { window.tipoUsuario = 'cliente'; }
 
       if (!window.unsubUserDoc) {
         window.unsubUserDoc = firebase.firestore().collection('usuarios').doc(user.uid).onSnapshot(d => {
@@ -453,13 +425,7 @@
         });
       }
 
-      if (window.OneSignal) {
-        try {
-          window.OneSignal.login(user.uid);
-          window.OneSignal.Notifications.requestPermission();
-        } catch (e) { }
-      }
-
+      if (window.OneSignal) { try { window.OneSignal.login(user.uid); window.OneSignal.Notifications.requestPermission(); } catch (e) { } }
       if (typeof init === 'function') init();
     } else {
       window.tipoUsuario = null;
@@ -479,14 +445,8 @@
   };
 
   // ===== PAINEL ADMIN =====
-  function abrirPainelAdmin() {
-    document.getElementById('modalAdmin').classList.remove('escondido');
-    carregarUsuarios();
-  }
-
-  function fecharPainelAdmin() {
-    document.getElementById('modalAdmin').classList.add('escondido');
-  }
+  function abrirPainelAdmin() { document.getElementById('modalAdmin').classList.remove('escondido'); carregarUsuarios(); }
+  function fecharPainelAdmin() { document.getElementById('modalAdmin').classList.add('escondido'); }
 
   async function carregarUsuarios() {
     const lista = document.getElementById('listaUsuarios');
@@ -494,52 +454,34 @@
     try {
       const snap = await firebase.firestore().collection('usuarios').get();
       lista.innerHTML = '';
-      if (snap.empty) {
-        lista.innerHTML = '<div style="text-align:center;padding:20px;color:var(--texto-sec);">Nenhum usuário.</div>';
-        return;
-      }
+      if (snap.empty) { lista.innerHTML = '<div style="text-align:center;padding:20px;color:var(--texto-sec);">Nenhum usuário.</div>'; return; }
       snap.forEach(doc => {
         const u = doc.data();
         const div = document.createElement('div');
         div.className = 'user-item';
         div.innerHTML = `
-          <div class="info">
-            <strong>${u.email || '(sem email)'}</strong>
-            <span>Criado: ${u.criadoEm ? new Date(u.criadoEm.seconds * 1000).toLocaleDateString('pt-BR') : '?'}</span>
-          </div>
+          <div class="info"><strong>${u.email || '(sem email)'}</strong><span>Criado: ${u.criadoEm ? new Date(u.criadoEm.seconds * 1000).toLocaleDateString('pt-BR') : '?'}</span></div>
           <span class="tipo-badge ${u.tipo || 'cliente'}">${u.tipo === 'admin' ? '👑 Admin' : '🧑 Cliente'}</span>
           <button title="Excluir" data-id="${doc.id}">🗑️</button>
         `;
         div.querySelector('button').onclick = () => excluirUsuario(doc.id, u.email);
         lista.appendChild(div);
       });
-    } catch (err) {
-      lista.innerHTML = '<div style="text-align:center;padding:20px;color:var(--vermelho);">❌ Erro: ' + err.message + '</div>';
-    }
+    } catch (err) { lista.innerHTML = '<div style="text-align:center;padding:20px;color:var(--vermelho);">❌ Erro: ' + err.message + '</div>'; }
   }
 
   async function criarConta() {
     const email = document.getElementById('adminEmail').value.trim();
     const senha = document.getElementById('adminSenha').value;
     const tipo = document.getElementById('adminTipo').value;
-
     if (!email || !senha) { alert('❌ Preencha email e senha'); return; }
     if (senha.length < 6) { alert('❌ Senha deve ter no mínimo 6 caracteres'); return; }
-
     try {
       const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, senha);
       const newUser = userCredential.user;
-
-      await firebase.firestore().collection('usuarios').doc(newUser.uid).set({
-        email: email,
-        tipo: tipo,
-        criadoEm: firebase.firestore.FieldValue.serverTimestamp()
-      });
-
+      await firebase.firestore().collection('usuarios').doc(newUser.uid).set({ email: email, tipo: tipo, criadoEm: firebase.firestore.FieldValue.serverTimestamp() });
       alert('✅ Conta criada!\n\nEmail: ' + email + '\nTipo: ' + tipo);
-      document.getElementById('adminEmail').value = '';
-      document.getElementById('adminSenha').value = '';
-      document.getElementById('adminTipo').value = 'cliente';
+      document.getElementById('adminEmail').value = ''; document.getElementById('adminSenha').value = ''; document.getElementById('adminTipo').value = 'cliente';
       carregarUsuarios();
     } catch (err) {
       let msg = '❌ Erro ao criar conta';
@@ -553,19 +495,13 @@
 
   async function excluirUsuario(uid, email) {
     if (!confirm(`Excluir o usuário ${email}?`)) return;
-    try {
-      await firebase.firestore().collection('usuarios').doc(uid).delete();
-      carregarUsuarios();
-    } catch (err) {
-      alert('❌ Erro ao excluir: ' + err.message);
-    }
+    try { await firebase.firestore().collection('usuarios').doc(uid).delete(); carregarUsuarios(); }
+    catch (err) { alert('❌ Erro ao excluir: ' + err.message); }
   }
 
   document.getElementById('btnCriarConta').onclick = criarConta;
   document.getElementById('btnFecharAdmin').onclick = fecharPainelAdmin;
-  document.getElementById('modalAdmin').onclick = (e) => {
-    if (e.target.id === 'modalAdmin') fecharPainelAdmin();
-  };
+  document.getElementById('modalAdmin').onclick = (e) => { if (e.target.id === 'modalAdmin') fecharPainelAdmin(); };
 </script>
 
 <!-- OneSignal init -->
@@ -592,10 +528,7 @@
   if (titulo) {
     titulo.addEventListener('click', () => {
       cliques++;
-      if (cliques === 5) {
-        alert('🎉 PARABÉNS! Você achou o easter egg!\n\n🎮 Fluxo GHOSTS\n👑 Líder: Cicero');
-        cliques = 0;
-      }
+      if (cliques === 5) { alert('🎉 PARABÉNS! Você achou o easter egg!\n\n🎮 Fluxo GHOSTS\n👑 Líder: Cicero'); cliques = 0; }
     });
   }
 </script>
